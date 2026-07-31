@@ -26,6 +26,7 @@ import {
   SidebarMenuSub,
   SidebarMenuSubButton,
   SidebarMenuSubItem,
+  useSidebar,
 } from '@/components/ui/sidebar';
 
 const navItems = [
@@ -68,6 +69,8 @@ const navItems = [
 
 export function AppSidebar() {
   const pathname = usePathname();
+  const { state } = useSidebar();
+  const isCollapsed = state === 'collapsed';
 
   return (
     <Sidebar variant="sidebar" collapsible="icon">
@@ -76,10 +79,12 @@ export function AppSidebar() {
           <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary">
             <BarChart3 className="h-4 w-4 text-primary-foreground" />
           </div>
-          <div className="flex flex-col">
-            <span className="text-sm font-semibold">利润报表</span>
-            <span className="text-[10px] text-muted-foreground">Amazon Profit Report</span>
-          </div>
+          {!isCollapsed && (
+            <div className="flex flex-col">
+              <span className="text-sm font-semibold">利润报表</span>
+              <span className="text-[10px] text-muted-foreground">Amazon Profit Report</span>
+            </div>
+          )}
         </div>
       </SidebarHeader>
       <SidebarContent>
