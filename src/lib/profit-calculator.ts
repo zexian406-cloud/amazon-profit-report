@@ -1,4 +1,4 @@
-import { Transaction, SKUProfitRow, SharedFee, Reconciliation, StorageFeeItem, AdReportItem, ReturnReportItem, SettlementReport } from './types';
+import { Transaction, SKUProfitRow, SharedFee, Reconciliation, StorageFeeItem, AdReportItem, ReturnReportItem, SettlementReport, ProductCostItem, DeliveryFeeItem } from './types';
 
 export function calculateSKUProfit(
   transactions: Transaction[],
@@ -8,7 +8,7 @@ export function calculateSKUProfit(
 ): { skuRows: SKUProfitRow[]; reconciliation: Reconciliation } {
   return calculateSKUProfitWithReports(
     transactions, sharedFees, month, storeName,
-    undefined, undefined, undefined, undefined
+    undefined, undefined, undefined, undefined, undefined, undefined
   );
 }
 
@@ -25,6 +25,8 @@ export function calculateSKUProfitWithReports(
   adReportItems?: AdReportItem[],
   returnReportItems?: ReturnReportItem[],
   settlementReport?: SettlementReport,
+  productCostItems?: ProductCostItem[],
+  deliveryFeeItems?: DeliveryFeeItem[],
 ): { skuRows: SKUProfitRow[]; reconciliation: Reconciliation } {
   // 按SKU分组
   const skuGroups = new Map<string, Transaction[]>();
@@ -67,6 +69,24 @@ export function calculateSKUProfitWithReports(
       current.quantity += item.returnQuantity;
       current.amount += Math.abs(item.refundAmount);
       returnBySKU.set(item.sku, current);
+    }
+  }
+
+  // 构建SKU→产品成本映射（来自产品成本表）
+  const productCostBySKU = new Map<string, number>();
+  if (productCostItems) {
+    for (const item of productCostItems) {
+      // 取最新（最后一条）的成本记录，或累加取平均
+      productCostBySKU.set(item.sku, item.fobCost);
+    }
+  }
+
+  // 构建SKU→尾程运费映射（来自尾程运费表）
+  const deliveryFeeBySKU = new Map<string, number>();
+  if (deliveryFeeItems) {
+    for (const item of deliveryFeeItems) {
+      const current = deliveryFeeBySKU.get(item.sku) || 0;
+      deliveryFeeBySKU.set(item.sku, current + item.deliveryFee);
     }
   }
 
@@ -176,6 +196,41 @@ export function calculateSKUProfitWithReports(
     // 入库配置费
     const inboundFee = Math.round(Math.abs(inboundFees.reduce((s, t) => s + t.totalAmount, 0)) * 100) / 100;
 
+    // ====== 产品成本与尾程运费（来自独立报表） ======
+    // 产品成本：优先使用产品成本表的最新数据，否则用交易明细中的估算
+    const reportProductCost = productCostBySKU.get(sku);
+    const txnProductCost = Math.abs(orders.reduce((s, t) => {
+      // 交易明细中可能没有产品成本，估算为0
+      const desc = t.description.toLowerCase();
+      if (desc.includes('cost') || desc.includes('成本') || desc.includes('采购')) return s + t.totalAmount;
+      return s;
+    }, 0));
+    let productCost: number;
+    let productCostSource: string;
+    if (reportProductCost !== undefined && reportProductCost > 0) {
+      productCost = Math.round(reportProductCost * orderQuantity * 100) / 100;
+      productCostSource = 'product_cost_report';
+    } else {
+      productCost = Math.round(txnProductCost * 100) / 100;
+      productCostSource = 'transaction';
+    }
+
+    // 尾程运费：优先使用尾程运费表的数据，否则用交易明细中的估算
+    const reportDeliveryFee = deliveryFeeBySKU.get(sku);
+    const txnDeliveryFee = Math.abs(fbaFees.filter(t => {
+      const desc = t.description.toLowerCase();
+      return desc.includes('shipping') || desc.includes('配送') || desc.includes('运费') || desc.includes('delivery');
+    }).reduce((s, t) => s + t.totalAmount, 0));
+    let deliveryFee: number;
+    let deliveryFeeSource: string;
+    if (reportDeliveryFee !== undefined && reportDeliveryFee > 0) {
+      deliveryFee = Math.round(reportDeliveryFee * 100) / 100;
+      deliveryFeeSource = 'delivery_fee_report';
+    } else {
+      deliveryFee = Math.round(Math.abs(txnDeliveryFee) * 100) / 100;
+      deliveryFeeSource = 'transaction';
+    }
+
     // 其他费用（调整等）
     const otherSkuFee = Math.round(Math.abs(adjustments.reduce((s, t) => s + t.totalAmount, 0) + otherFees.reduce((s, t) => s + t.totalAmount, 0)) * 100) / 100;
 
@@ -191,6 +246,8 @@ export function calculateSKUProfitWithReports(
       adFee +
       Math.abs(inboundFee) +
       returnFee +
+      Math.abs(productCost) +
+      Math.abs(deliveryFee) +
       Math.abs(subscriptionFee) +
       Math.abs(otherFee) +
       otherSkuFee
@@ -224,6 +281,8 @@ export function calculateSKUProfitWithReports(
       adFee,
       inboundFee,
       returnFee,
+      productCost,
+      deliveryFee,
       subscriptionFee,
       otherFee,
       totalFee,
@@ -233,6 +292,8 @@ export function calculateSKUProfitWithReports(
         storageFee: storageFeeSource,
         adFee: adFeeSource,
         returnFee: returnFeeSource,
+        productCost: productCostSource,
+        deliveryFee: deliveryFeeSource,
       },
     });
   }
@@ -263,6 +324,8 @@ export function calculateSKUProfitWithReports(
         row.adFee +
         Math.abs(row.inboundFee) +
         row.returnFee +
+        Math.abs(row.productCost) +
+        Math.abs(row.deliveryFee) +
         Math.abs(row.subscriptionFee) +
         Math.abs(row.otherFee)
       ) * 100) / 100;

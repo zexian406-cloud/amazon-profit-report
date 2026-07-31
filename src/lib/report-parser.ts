@@ -2,6 +2,7 @@ import * as XLSX from 'xlsx';
 import {
   ReportType, ReportTypeFeature,
   SettlementReport, StorageFeeItem, AdReportItem, ReturnReportItem,
+  ProductCostItem, DeliveryFeeItem,
   UploadedReport, Transaction, SharedFee,
 } from './types';
 
@@ -54,6 +55,24 @@ export const REPORT_TYPE_FEATURES: ReportTypeFeature[] = [
     ],
     priority: 50,
   },
+  {
+    type: 'productCost',
+    keywords: ['fob', '产品成本', '采购价', '成本', 'cost', 'unit_cost', '采购成本'],
+    requiredColumns: [
+      ['sku', 'SKU'],
+      ['fob', 'cost', 'unit_cost', '产品成本', '采购价', '采购成本', 'price', 'fob-cost'],
+    ],
+    priority: 75,
+  },
+  {
+    type: 'deliveryFee',
+    keywords: ['尾程', '运费', '配送费', 'shipping', 'delivery', 'carrier', '尾程运费', '物流费'],
+    requiredColumns: [
+      ['sku', 'SKU'],
+      ['shipping-fee', 'delivery-fee', 'deliverycost', 'shipping', '运费', '尾程运费', '配送费', 'delivery_cost', 'shipping_fee'],
+    ],
+    priority: 65,
+  },
 ];
 
 // ====== 列名标准化（通用版） ======
@@ -103,6 +122,22 @@ function normalizeHeader(header: string): string {
     'return-reason': 'returnReason', 'returnreason': 'returnReason', '退货原因': 'returnReason',
     'refund-amount': 'refundAmount', 'refundamount': 'refundAmount', '退款金额': 'refundAmount',
     'return-date': 'returnDate', 'returndate': 'returnDate', '退货日期': 'returnDate',
+    // 产品成本/FOB
+    'fob': 'fobCost', 'fob-cost': 'fobCost', 'fobcost': 'fobCost',
+    'unit-cost': 'fobCost', 'unitcost': 'fobCost',
+    'unit_cost': 'fobCost', '产品成本': 'fobCost', '采购价': 'fobCost',
+    '采购成本': 'fobCost', '成本价': 'fobCost', 'price': 'fobCost',
+    'product-name': 'productName', 'productname': 'productName', '产品名': 'productName',
+    'effective-date': 'effectiveDate', 'effectivedate': 'effectiveDate', '生效日期': 'effectiveDate',
+    // 尾程运费
+    'shipping-fee': 'deliveryFee', 'shippingfee': 'deliveryFee',
+    'delivery-fee': 'deliveryFee', 'deliveryfee': 'deliveryFee',
+    'delivery_cost': 'deliveryFee', 'shipping_fee': 'deliveryFee',
+    '尾程运费': 'deliveryFee', '配送费': 'deliveryFee', '运费': 'deliveryFee', '物流费': 'deliveryFee',
+    'carrier': 'carrier', '物流商': 'carrier', '物流': 'carrier',
+    'shipping-method': 'shippingMethod', 'shippingmethod': 'shippingMethod', '配送方式': 'shippingMethod',
+    'destination': 'destination', '目的地': 'destination', '收货地': 'destination',
+    'delivery-date': 'deliveryDate', 'deliverydate': 'deliveryDate', '配送日期': 'deliveryDate',
   };
 
   const key = header.toLowerCase().trim().replace(/[\s_-]+/g, '-');
@@ -465,6 +500,124 @@ export function parseReturnReport(file: File): Promise<{
   });
 }
 
+// ====== 产品成本/FOB解析 ======
+
+export function parseProductCostReport(file: File): Promise<{
+  productCostItems: ProductCostItem[];
+  uploadedReports: UploadedReport[];
+}> {
+  return new Promise(async (resolve, reject) => {
+    try {
+      const { jsonData } = await readExcelFile(file);
+
+      const productCostItems: ProductCostItem[] = [];
+      let storeName = '一店';
+      const monthSet = new Set<string>();
+
+      for (const row of jsonData) {
+        const sku = row['sku'] || '';
+        const productName = row['productName'] || '';
+        const fobCost = parseAmount(row['fobCost'] || '0');
+        const currency = row['currency'] || 'USD';
+        const dateStr = row['effectiveDate'] || row['date'] || '';
+        const month = dateStr ? extractMonthFromDate(dateStr) : extractMonthFromDate(new Date().toISOString());
+        monthSet.add(month);
+
+        if (row['store']) storeName = row['store'];
+        if (!sku) continue;
+
+        productCostItems.push({
+          sku,
+          productName: productName || 'N/A',
+          fobCost,
+          currency,
+          effectiveDate: dateStr || month,
+          month,
+          storeName,
+        });
+      }
+
+      const primaryMonth = Array.from(monthSet)[0] || extractMonthFromDate(new Date().toISOString());
+
+      const uploadedReports: UploadedReport[] = [{
+        id: `productCost-${Date.now()}`,
+        fileName: file.name,
+        reportType: 'productCost',
+        month: primaryMonth,
+        storeName,
+        uploadTime: new Date().toISOString(),
+        rowCount: jsonData.length,
+        status: 'parsed',
+      }];
+
+      resolve({ productCostItems, uploadedReports });
+    } catch (error) {
+      reject(error);
+    }
+  });
+}
+
+// ====== 尾程运费解析 ======
+
+export function parseDeliveryFeeReport(file: File): Promise<{
+  deliveryFeeItems: DeliveryFeeItem[];
+  uploadedReports: UploadedReport[];
+}> {
+  return new Promise(async (resolve, reject) => {
+    try {
+      const { jsonData } = await readExcelFile(file);
+
+      const deliveryFeeItems: DeliveryFeeItem[] = [];
+      let storeName = '一店';
+      const monthSet = new Set<string>();
+
+      for (const row of jsonData) {
+        const sku = row['sku'] || '';
+        const orderId = row['orderId'] || '';
+        const deliveryFee = parseAmount(row['deliveryFee'] || '0');
+        const carrier = row['carrier'] || '';
+        const shippingMethod = row['shippingMethod'] || '';
+        const destination = row['destination'] || '';
+        const dateStr = row['deliveryDate'] || row['date'] || '';
+        const month = dateStr ? extractMonthFromDate(dateStr) : extractMonthFromDate(new Date().toISOString());
+        monthSet.add(month);
+
+        if (row['store']) storeName = row['store'];
+        if (!sku) continue;
+
+        deliveryFeeItems.push({
+          sku,
+          orderId: orderId || 'N/A',
+          deliveryFee,
+          carrier: carrier || 'N/A',
+          shippingMethod: shippingMethod || 'N/A',
+          destination: destination || 'N/A',
+          deliveryDate: dateStr || month,
+          month,
+          storeName,
+        });
+      }
+
+      const primaryMonth = Array.from(monthSet)[0] || extractMonthFromDate(new Date().toISOString());
+
+      const uploadedReports: UploadedReport[] = [{
+        id: `deliveryFee-${Date.now()}`,
+        fileName: file.name,
+        reportType: 'deliveryFee',
+        month: primaryMonth,
+        storeName,
+        uploadTime: new Date().toISOString(),
+        rowCount: jsonData.length,
+        status: 'parsed',
+      }];
+
+      resolve({ deliveryFeeItems, uploadedReports });
+    } catch (error) {
+      reject(error);
+    }
+  });
+}
+
 // ====== 通用多报表解析入口 ======
 
 export async function parseReportByType(
@@ -476,6 +629,8 @@ export async function parseReportByType(
   storageFeeItems?: StorageFeeItem[];
   adReportItems?: AdReportItem[];
   returnReportItems?: ReturnReportItem[];
+  productCostItems?: ProductCostItem[];
+  deliveryFeeItems?: DeliveryFeeItem[];
   uploadedReports: UploadedReport[];
 }> {
   switch (reportType) {
@@ -494,6 +649,14 @@ export async function parseReportByType(
     case 'return': {
       const result = await parseReturnReport(file);
       return { reportType, returnReportItems: result.returnReportItems, uploadedReports: result.uploadedReports };
+    }
+    case 'productCost': {
+      const result = await parseProductCostReport(file);
+      return { reportType, productCostItems: result.productCostItems, uploadedReports: result.uploadedReports };
+    }
+    case 'deliveryFee': {
+      const result = await parseDeliveryFeeReport(file);
+      return { reportType, deliveryFeeItems: result.deliveryFeeItems, uploadedReports: result.uploadedReports };
     }
     default:
       throw new Error(`不支持的报表类型: ${reportType}`);
@@ -578,6 +741,8 @@ export function getReportTypeColor(type: ReportType): string {
     storage: '#f59e0b',
     advertising: '#ef4444',
     return: '#10b981',
+    productCost: '#06b6d4',
+    deliveryFee: '#f97316',
   };
   return colors[type] || '#6b7280';
 }
@@ -590,6 +755,8 @@ export function getReportTypeIcon(type: ReportType): string {
     storage: 'Warehouse',
     advertising: 'BarChart3',
     return: 'Undo2',
+    productCost: 'DollarSign',
+    deliveryFee: 'Truck',
   };
   return icons[type] || 'File';
 }

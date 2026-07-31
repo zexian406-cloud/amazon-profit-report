@@ -17,7 +17,9 @@ export type ReportType =
   | 'settlement'     // 结算报告
   | 'storage'        // 仓储费报告
   | 'advertising'    // 广告报告
-  | 'return';        // 退货报告
+  | 'return'         // 退货报告
+  | 'productCost'    // 产品成本/FOB
+  | 'deliveryFee';   // 尾程运费
 
 // 报表类型中文名
 export const REPORT_TYPE_LABELS: Record<ReportType, string> = {
@@ -26,6 +28,8 @@ export const REPORT_TYPE_LABELS: Record<ReportType, string> = {
   storage: '仓储费报告',
   advertising: '广告报告',
   return: '退货报告',
+  productCost: '产品成本/FOB',
+  deliveryFee: '尾程运费',
 };
 
 // 报表类型检测特征
@@ -96,11 +100,16 @@ export interface SKUProfitRow {
   totalFee: number;
   netIncome: number;
   profitMargin: number;    // 百分比
+  // 产品成本与运费（来自独立报表）
+  productCost: number;     // 产品成本（来自产品成本表），替换交易明细估算
+  deliveryFee: number;     // 尾程运费（来自尾程运费表），替换运费估算
   // 数据来源标注
   dataSources?: {
     storageFee: string;  // 'transaction' | 'storage_report' | 'merged'
     adFee: string;       // 'transaction' | 'ad_report' | 'merged'
     returnFee: string;   // 'transaction' | 'return_report' | 'merged'
+    productCost?: string;  // 'transaction' | 'product_cost_report'
+    deliveryFee?: string;  // 'transaction' | 'delivery_fee_report'
   };
 }
 
@@ -194,6 +203,30 @@ export interface ReturnReportItem {
   storeName: string;
 }
 
+// 产品成本/FOB条目
+export interface ProductCostItem {
+  sku: string;
+  productName: string;
+  fobCost: number;      // FOB/采购成本价
+  currency: string;
+  effectiveDate: string; // 生效日期
+  month: string;
+  storeName: string;
+}
+
+// 尾程运费条目
+export interface DeliveryFeeItem {
+  sku: string;
+  orderId: string;
+  deliveryFee: number;   // 尾程配送费
+  carrier: string;       // 物流商
+  shippingMethod: string;
+  destination: string;
+  deliveryDate: string;
+  month: string;
+  storeName: string;
+}
+
 // 已上传报表元信息
 export interface UploadedReport {
   id: string;
@@ -218,6 +251,8 @@ export interface MultiReportResult {
   storageFeeItems?: StorageFeeItem[];
   adReportItems?: AdReportItem[];
   returnReportItems?: ReturnReportItem[];
+  productCostItems?: ProductCostItem[];
+  deliveryFeeItems?: DeliveryFeeItem[];
   // 已上传报表清单
   uploadedReports: UploadedReport[];
 }

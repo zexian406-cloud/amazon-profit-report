@@ -7,7 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import {
   Upload, FileSpreadsheet, AlertCircle, CheckCircle2, Loader2, Download,
-  FileCheck, BarChart3, Undo2, Warehouse, File, Trash2, Layers,
+  FileCheck, BarChart3, Undo2, Warehouse, File, Trash2, Layers, DollarSign, Truck,
 } from 'lucide-react';
 import { parseExcel } from '@/lib/excel-parser';
 import { calculateSKUProfitWithReports } from '@/lib/profit-calculator';
@@ -16,6 +16,7 @@ import {
   ParseResult, SKUProfitRow, SharedFee, Reconciliation,
   ReportType, REPORT_TYPE_LABELS, UploadedReport,
   SettlementReport, StorageFeeItem, AdReportItem, ReturnReportItem,
+  ProductCostItem, DeliveryFeeItem,
 } from '@/lib/types';
 import {
   parseReportByType, detectReportType, extractSharedFeesFromReports,
@@ -29,6 +30,8 @@ const REPORT_TYPES: { type: ReportType; icon: typeof File }[] = [
   { type: 'storage', icon: Warehouse },
   { type: 'advertising', icon: BarChart3 },
   { type: 'return', icon: Undo2 },
+  { type: 'productCost', icon: DollarSign },
+  { type: 'deliveryFee', icon: Truck },
 ];
 
 function ReportTypeIcon({ type, className }: { type: ReportType; className?: string }) {
@@ -38,6 +41,8 @@ function ReportTypeIcon({ type, className }: { type: ReportType; className?: str
     storage: Warehouse,
     advertising: BarChart3,
     return: Undo2,
+    productCost: DollarSign,
+    deliveryFee: Truck,
   };
   const Icon = iconMap[type] || File;
   return <Icon className={className || 'h-4 w-4'} />;
@@ -58,6 +63,8 @@ export default function ImportPage() {
   const [storageFeeItems, setStorageFeeItems] = useState<StorageFeeItem[] | undefined>();
   const [adReportItems, setAdReportItems] = useState<AdReportItem[] | undefined>();
   const [returnReportItems, setReturnReportItems] = useState<ReturnReportItem[] | undefined>();
+  const [productCostItems, setProductCostItems] = useState<ProductCostItem[] | undefined>();
+  const [deliveryFeeItems, setDeliveryFeeItems] = useState<DeliveryFeeItem[] | undefined>();
 
   // 解析状态
   const [parsing, setParsing] = useState(false);
@@ -194,6 +201,28 @@ export default function ImportPage() {
           })));
           setPreviewHeaders(['SKU', 'ASIN', '退货数量', '退款金额', '原因']);
         }
+        if (parsed.productCostItems) {
+          setProductCostItems(prev => [...(prev || []), ...parsed.productCostItems!]);
+          setPreviewData(parsed.productCostItems.map(item => ({
+            SKU: item.sku,
+            产品名: item.productName,
+            FOB成本: String(item.fobCost),
+            币种: item.currency,
+            生效日期: item.effectiveDate,
+          })));
+          setPreviewHeaders(['SKU', '产品名', 'FOB成本', '币种', '生效日期']);
+        }
+        if (parsed.deliveryFeeItems) {
+          setDeliveryFeeItems(prev => [...(prev || []), ...parsed.deliveryFeeItems!]);
+          setPreviewData(parsed.deliveryFeeItems.map(item => ({
+            SKU: item.sku,
+            订单号: item.orderId,
+            运费: String(item.deliveryFee),
+            物流商: item.carrier,
+            目的地: item.destination,
+          })));
+          setPreviewHeaders(['SKU', '订单号', '运费', '物流商', '目的地']);
+        }
 
         setUploadedReports(prev => [...prev, ...parsed.uploadedReports]);
         setActiveTab('reports');
@@ -213,11 +242,12 @@ export default function ImportPage() {
     setUploadedReports(prev => prev.filter(r => r.id !== id));
     if (report.reportType === 'settlement') setSettlementReport(undefined);
     if (report.reportType === 'storage') {
-      // 重新设置
       setStorageFeeItems(undefined);
     }
     if (report.reportType === 'advertising') setAdReportItems(undefined);
     if (report.reportType === 'return') setReturnReportItems(undefined);
+    if (report.reportType === 'productCost') setProductCostItems(undefined);
+    if (report.reportType === 'deliveryFee') setDeliveryFeeItems(undefined);
   }
 
   // 合并所有报表数据并计算利润
@@ -253,6 +283,8 @@ export default function ImportPage() {
         adReportItems,
         returnReportItems,
         settlementReport,
+        productCostItems,
+        deliveryFeeItems,
       );
 
       setSkuRows(rows);
@@ -305,6 +337,7 @@ export default function ImportPage() {
         '总FBA费', '退款FBA费', '净FBA费',
         '仓储费', '仓储费来源', '广告费', '广告费来源',
         '入库配置费', '退货处理费', '退货费来源',
+        '产品成本', '产品成本来源', '尾程运费', '尾程运费来源',
         '订阅费(均摊)', '其他费用(均摊)',
         '费用总计', 'SKU净收入', '利润率(%)'],
     ];
@@ -319,6 +352,8 @@ export default function ImportPage() {
         row.adFee, row.dataSources?.adFee || 'transaction',
         row.inboundFee, row.returnFee,
         row.dataSources?.returnFee || 'transaction',
+        row.productCost, row.dataSources?.productCost || 'transaction',
+        row.deliveryFee, row.dataSources?.deliveryFee || 'transaction',
         row.subscriptionFee, row.otherFee,
         row.totalFee, row.netIncome,
         (row.profitMargin * 100).toFixed(2),
@@ -340,6 +375,8 @@ export default function ImportPage() {
       adFee: skuRows.reduce((s, r) => s + r.adFee, 0),
       inboundFee: skuRows.reduce((s, r) => s + r.inboundFee, 0),
       returnFee: skuRows.reduce((s, r) => s + r.returnFee, 0),
+      productCost: skuRows.reduce((s, r) => s + r.productCost, 0),
+      deliveryFee: skuRows.reduce((s, r) => s + r.deliveryFee, 0),
       subscriptionFee: skuRows.reduce((s, r) => s + r.subscriptionFee, 0),
       otherFee: skuRows.reduce((s, r) => s + r.otherFee, 0),
       totalFee: skuRows.reduce((s, r) => s + r.totalFee, 0),
@@ -351,6 +388,7 @@ export default function ImportPage() {
       totals.grossCommission, totals.refundCommission, totals.netCommission,
       totals.grossFBAFee, totals.refundFBAFee, totals.netFBAFee,
       totals.storageFee, '', totals.adFee, '', totals.inboundFee, totals.returnFee, '',
+      totals.productCost, '', totals.deliveryFee, '',
       totals.subscriptionFee, totals.otherFee, totals.totalFee, totals.netIncome, '']);
     const ws1 = XLSX.utils.aoa_to_sheet(ws1Data);
     ws1['!cols'] = ws1Data[2].map(() => ({ wch: 14 }));
@@ -855,6 +893,88 @@ export default function ImportPage() {
                             <td className="py-2 px-2 text-right">{item.returnQuantity}</td>
                             <td className="py-2 px-2 text-right">${item.refundAmount.toFixed(2)}</td>
                             <td className="py-2 px-2 max-w-[200px] truncate text-muted-foreground">{item.returnReason}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {productCostItems && productCostItems.length > 0 && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base flex items-center gap-2">
+                    <DollarSign className="h-4 w-4 text-sky-500" />
+                    产品成本数据 ({productCostItems.length} 条)
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="overflow-x-auto max-h-60 overflow-y-auto">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="border-b">
+                          <th className="text-left py-2 px-2 font-medium">SKU</th>
+                          <th className="text-left py-2 px-2 font-medium">产品名称</th>
+                          <th className="text-right py-2 px-2 font-medium">FOB/采购价</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {productCostItems.map((item, i) => (
+                          <tr key={i} className="border-b hover:bg-muted/50">
+                            <td className="py-2 px-2 max-w-[120px] truncate">{item.sku}</td>
+                            <td className="py-2 px-2 max-w-[200px] truncate text-muted-foreground">{item.productName}</td>
+                            <td className="py-2 px-2 text-right font-medium">${item.fobCost.toFixed(2)}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {deliveryFeeItems && deliveryFeeItems.length > 0 && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base flex items-center gap-2">
+                    <Truck className="h-4 w-4 text-indigo-500" />
+                    尾程运费数据 ({deliveryFeeItems.length} 条)
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-4">
+                    <div>
+                      <p className="text-xs text-muted-foreground">总运费</p>
+                      <p className="text-lg font-semibold">${deliveryFeeItems.reduce((s, i) => s + i.deliveryFee, 0).toFixed(2)}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-muted-foreground">最大单笔</p>
+                      <p className="text-lg font-semibold">${Math.max(...deliveryFeeItems.map(i => i.deliveryFee)).toFixed(2)}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-muted-foreground">涉及SKU数</p>
+                      <p className="text-lg font-semibold">{new Set(deliveryFeeItems.map(i => i.sku)).size}</p>
+                    </div>
+                  </div>
+                  <div className="overflow-x-auto max-h-60 overflow-y-auto">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="border-b">
+                          <th className="text-left py-2 px-2 font-medium">SKU</th>
+                          <th className="text-left py-2 px-2 font-medium">订单号</th>
+                          <th className="text-right py-2 px-2 font-medium">运费</th>
+                          <th className="text-left py-2 px-2 font-medium">承运商</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {deliveryFeeItems.map((item, i) => (
+                          <tr key={i} className="border-b hover:bg-muted/50">
+                            <td className="py-2 px-2 max-w-[120px] truncate">{item.sku}</td>
+                            <td className="py-2 px-2 max-w-[140px] truncate text-muted-foreground">{item.orderId}</td>
+                            <td className="py-2 px-2 text-right font-medium">${item.deliveryFee.toFixed(2)}</td>
+                            <td className="py-2 px-2 max-w-[100px] truncate">{item.carrier || '-'}</td>
                           </tr>
                         ))}
                       </tbody>

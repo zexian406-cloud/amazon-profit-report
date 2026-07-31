@@ -67,6 +67,8 @@ export default function DashboardPage() {
           totalFee: 0,
           netIncome: netSales,
           profitMargin: netSales > 0 ? 1 : 0,
+          productCost: 0,
+          deliveryFee: 0,
         });
       }
       setTrends(getMonthlyTrends(allReports));
