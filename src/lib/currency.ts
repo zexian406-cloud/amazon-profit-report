@@ -17,6 +17,15 @@ export interface ExchangeRate {
   updatedAt: string;
 }
 
+export interface ExchangeRateOverride {
+  id?: number;
+  month: string;
+  fromCurrency: string;
+  toCurrency: string;
+  rate: number;
+  updatedAt: string;
+}
+
 export function getCurrencySymbol(code: string): string {
   return CURRENCY_OPTIONS.find((c) => c.value === code)?.symbol || code;
 }
@@ -33,6 +42,27 @@ export function convertAmount(
   );
   if (!rate) return amount;
   return Math.round(amount * rate.rate * 100) / 100;
+}
+
+/** 优先使用月度汇率，再使用默认汇率 */
+export function convertAmountWithOverrides(
+  amount: number,
+  fromCurrency: string,
+  toCurrency: string,
+  defaultRates: ExchangeRate[],
+  monthlyOverrides: ExchangeRateOverride[],
+  month: string
+): number {
+  if (fromCurrency === toCurrency || !amount) return amount;
+  // 优先查月度汇率
+  const monthly = monthlyOverrides.find(
+    (r) => r.month === month && r.fromCurrency === fromCurrency && r.toCurrency === toCurrency
+  );
+  if (monthly) {
+    return Math.round(amount * monthly.rate * 100) / 100;
+  }
+  // 回退到默认汇率
+  return convertAmount(amount, fromCurrency, toCurrency, defaultRates);
 }
 
 export function formatCurrency(

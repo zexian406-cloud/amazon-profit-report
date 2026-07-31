@@ -341,6 +341,15 @@ export interface ExchangeRate {
   updatedAt: string;
 }
 
+export interface ExchangeRateOverride {
+  id?: number;
+  month: string; // e.g. '2026-07'
+  fromCurrency: string;
+  toCurrency: string;
+  rate: number;
+  updatedAt: string;
+}
+
 export const DEFAULT_STORES: StoreConfig[] = [
   { name: '一店', currency: 'USD', subscriptionFee: 39.99, otherSharedFees: 0, defaultManager: '' },
   { name: '二店', currency: 'USD', subscriptionFee: 39.99, otherSharedFees: 0, defaultManager: '' },

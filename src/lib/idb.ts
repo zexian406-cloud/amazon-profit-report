@@ -1,7 +1,7 @@
-import { MonthlyData, SharedFee, StoreConfig, SKUProfitRow, HistoryMonth, Shop, DEFAULT_SHOP_NAMES, ExchangeRate, ManagerMapping } from './types';
+import { MonthlyData, SharedFee, StoreConfig, SKUProfitRow, HistoryMonth, Shop, DEFAULT_SHOP_NAMES, ExchangeRate, ManagerMapping, ExchangeRateOverride } from './types';
 
 const DB_NAME = 'amazon_profit_db';
-const DB_VERSION = 4;
+const DB_VERSION = 5;
 
 function openDB(): Promise<IDBDatabase> {
   return new Promise((resolve, reject) => {
@@ -29,8 +29,66 @@ function openDB(): Promise<IDBDatabase> {
       if (!db.objectStoreNames.contains('managerMappings')) {
         db.createObjectStore('managerMappings', { keyPath: 'id', autoIncrement: true });
       }
+      if (!db.objectStoreNames.contains('exchangeRateOverrides')) {
+        db.createObjectStore('exchangeRateOverrides', { keyPath: 'id', autoIncrement: true });
+      }
     };
     request.onsuccess = () => resolve(request.result);
+    request.onerror = () => reject(request.error);
+  });
+}
+
+// ====== 月度汇率覆盖 (ExchangeRateOverrides) ======
+
+export async function getExchangeRateOverrides(): Promise<ExchangeRateOverride[]> {
+  const db = await openDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction('exchangeRateOverrides', 'readonly');
+    const store = tx.objectStore('exchangeRateOverrides');
+    const request = store.getAll();
+    request.onsuccess = () => resolve(request.result);
+    request.onerror = () => reject(request.error);
+  });
+}
+
+export async function addExchangeRateOverride(override: Omit<ExchangeRateOverride, 'id'>): Promise<ExchangeRateOverride> {
+  const db = await openDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction('exchangeRateOverrides', 'readwrite');
+    const store = tx.objectStore('exchangeRateOverrides');
+    const request = store.add(override);
+    request.onsuccess = () => {
+      const newId = request.result as number;
+      resolve({ ...override, id: newId } as ExchangeRateOverride);
+    };
+    request.onerror = () => reject(request.error);
+  });
+}
+
+export async function updateExchangeRateOverride(id: number, override: Partial<ExchangeRateOverride>): Promise<void> {
+  const db = await openDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction('exchangeRateOverrides', 'readwrite');
+    const store = tx.objectStore('exchangeRateOverrides');
+    const getReq = store.get(id);
+    getReq.onsuccess = () => {
+      const existing = getReq.result as ExchangeRateOverride;
+      if (!existing) { reject(new Error('记录不存在')); return; }
+      const updated = { ...existing, ...override };
+      store.put(updated);
+      resolve();
+    };
+    getReq.onerror = () => reject(getReq.error);
+  });
+}
+
+export async function deleteExchangeRateOverride(id: number): Promise<void> {
+  const db = await openDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction('exchangeRateOverrides', 'readwrite');
+    const store = tx.objectStore('exchangeRateOverrides');
+    const request = store.delete(id);
+    request.onsuccess = () => resolve();
     request.onerror = () => reject(request.error);
   });
 }

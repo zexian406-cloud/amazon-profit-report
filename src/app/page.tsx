@@ -4,9 +4,9 @@ import { useEffect, useState, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { getAllMonthlyData, getAllProfitReports, getExchangeRates } from '@/lib/idb';
-import { MonthlyData, SKUProfitRow, ALL_STORES, getShopLabel, getShopColor, CURRENCY_OPTIONS, getCurrencySymbol } from '@/lib/types';
-import { convertAmount } from '@/lib/currency';
+import { getAllMonthlyData, getAllProfitReports, getExchangeRates, getExchangeRateOverrides } from '@/lib/idb';
+import { MonthlyData, SKUProfitRow, ALL_STORES, getShopLabel, getShopColor, CURRENCY_OPTIONS, getCurrencySymbol, ExchangeRateOverride } from '@/lib/types';
+import { convertAmountWithOverrides, ExchangeRate } from '@/lib/currency';
 import { ShopFilter } from '@/components/layout/shop-filter';
 import { useShops } from '@/hooks/use-shops';
 import { TrendingUp, DollarSign, Package, Percent } from 'lucide-react';
@@ -49,7 +49,8 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
   const [storeFilter, setStoreFilter] = useState<string>(ALL_STORES);
   const [displayCurrency, setDisplayCurrency] = useState('CNY');
-  const [exchangeRates, setExchangeRates] = useState<any[]>([]);
+  const [exchangeRates, setExchangeRates] = useState<ExchangeRate[]>([]);
+  const [exchangeRateOverrides, setExchangeRateOverrides] = useState<ExchangeRateOverride[]>([]);
 
   const availableStores = useMemo(() => {
     const storeSet = new Set<string>();
@@ -66,15 +67,19 @@ export default function DashboardPage() {
 
   async function loadExchangeRates() {
     try {
-      const rates = await getExchangeRates();
+      const [rates, overrides] = await Promise.all([
+        getExchangeRates(),
+        getExchangeRateOverrides(),
+      ]);
       setExchangeRates(rates);
+      setExchangeRateOverrides(overrides);
     } catch (e) {
       console.error('加载汇率失败:', e);
     }
   }
 
-  function convert(val: number, fromCurrency: string = 'USD') {
-    return convertAmount(val, fromCurrency, displayCurrency, exchangeRates);
+  function convert(val: number, fromCurrency: string = 'USD', month?: string) {
+    return convertAmountWithOverrides(val, fromCurrency, displayCurrency, exchangeRates, exchangeRateOverrides, month || '');
   }
 
   const currencySymbol = getCurrencySymbol(displayCurrency);

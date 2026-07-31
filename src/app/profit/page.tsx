@@ -11,10 +11,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { getAllMonthlyData, getSharedFees, getExchangeRates } from '@/lib/idb';
+import { getAllMonthlyData, getSharedFees, getExchangeRates, getExchangeRateOverrides } from '@/lib/idb';
 import { calculateSKUProfit } from '@/lib/profit-calculator';
-import { MonthlyData, SharedFee, SKUProfitRow, Reconciliation, ALL_STORES } from '@/lib/types';
-import { CURRENCY_OPTIONS, ExchangeRate, getCurrencySymbol, convertAmount, formatCurrency } from '@/lib/currency';
+import { MonthlyData, SharedFee, SKUProfitRow, Reconciliation, ALL_STORES, ExchangeRateOverride } from '@/lib/types';
+import { CURRENCY_OPTIONS, ExchangeRate, getCurrencySymbol, convertAmountWithOverrides, formatCurrency } from '@/lib/currency';
 import { useShops } from '@/hooks/use-shops';
 import { ShopFilter } from '@/components/layout/shop-filter';
 import { Search, ArrowUpDown, Download } from 'lucide-react';
@@ -72,6 +72,7 @@ export default function ProfitPage() {
   const [selectedStore, setSelectedStore] = useState<string>('');
   const [displayCurrency, setDisplayCurrency] = useState('CNY');
   const [exchangeRates, setExchangeRates] = useState<ExchangeRate[]>([]);
+  const [exchangeRateOverrides, setExchangeRateOverrides] = useState<ExchangeRateOverride[]>([]);
   const [skuRows, setSkuRows] = useState<SKUProfitRow[]>([]);
   const [sharedFees, setSharedFees] = useState<SharedFee[]>([]);
   const [reconciliation, setReconciliation] = useState<Reconciliation | null>(null);
@@ -89,8 +90,14 @@ export default function ProfitPage() {
 
   async function loadData() {
     try {
-      const data = await getAllMonthlyData();
+      const [data, rates, overrides] = await Promise.all([
+        getAllMonthlyData(),
+        getExchangeRates(),
+        getExchangeRateOverrides(),
+      ]);
       setMonthlyDataList(data);
+      setExchangeRates(rates);
+      setExchangeRateOverrides(overrides);
       if (data.length > 0) {
         setSelectedMonth(data[0].month);
         setSelectedStore('全部');
@@ -190,15 +197,18 @@ export default function ProfitPage() {
     if (val === undefined || val === null || val === '') return '-';
     if (col.type === 'currency') {
       let v = val as number;
-      // 汇率换算
-      if (displayCurrency && exchangeRates.length > 0 && displayCurrency !== 'USD') {
+      if (displayCurrency) {
         const shop = shops.find(s => s.name === row.storeName);
         const fromCurrency = shop?.currency || 'USD';
         if (fromCurrency !== displayCurrency) {
-          const rate = exchangeRates.find(
-            r => r.fromCurrency === fromCurrency && r.toCurrency === displayCurrency
+          v = convertAmountWithOverrides(
+            v,
+            fromCurrency,
+            displayCurrency,
+            exchangeRates,
+            exchangeRateOverrides,
+            row.month || selectedMonth
           );
-          if (rate) v = v * rate.rate;
         }
       }
       const symbol = getCurrencySymbol(displayCurrency || 'USD');
