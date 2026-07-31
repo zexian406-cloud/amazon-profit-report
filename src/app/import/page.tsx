@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useCallback, useMemo, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -16,8 +16,9 @@ import {
   ParseResult, SKUProfitRow, SharedFee, Reconciliation,
   ReportType, REPORT_TYPE_LABELS, UploadedReport,
   SettlementReport, StorageFeeItem, AdReportItem, ReturnReportItem,
-  ProductCostItem, DeliveryFeeItem,
+  ProductCostItem, DeliveryFeeItem, getShopColor,
 } from '@/lib/types';
+import { useShops } from '@/hooks/use-shops';
 import { ShopFilter } from '@/components/layout/shop-filter';
 import {
   parseReportByType, detectReportType, extractSharedFeesFromReports,
@@ -50,9 +51,10 @@ function ReportTypeIcon({ type, className }: { type: ReportType; className?: str
 }
 
 export default function ImportPage() {
+  const { shops } = useShops();
   // 报表类型选择
   const [reportType, setReportType] = useState<ReportType | 'auto'>('transaction');
-  const [uploadStore, setUploadStore] = useState('一店');
+  const [uploadStore, setUploadStore] = useState<string>('');
 
   // 已上传报表列表
   const [uploadedReports, setUploadedReports] = useState<UploadedReport[]>([]);
@@ -81,6 +83,13 @@ export default function ImportPage() {
   // 当前预览数据
   const [previewData, setPreviewData] = useState<Record<string, string>[]>([]);
   const [previewHeaders, setPreviewHeaders] = useState<string[]>([]);
+
+  // 店铺列表加载后设置默认店铺
+  useEffect(() => {
+    if (shops.length > 0 && !uploadStore) {
+      setUploadStore(shops[0].name!);
+    }
+  }, [shops, uploadStore]);
 
   // 激活的Tab
   const [activeTab, setActiveTab] = useState('upload');
@@ -466,14 +475,14 @@ export default function ImportPage() {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-3 gap-4">
-            {['一店', '二店', '三店'].map((store, idx) => {
-              const storeReports = uploadedReports.filter(r => r.storeName === store);
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+            {shops.map((shop) => {
+              const storeReports = uploadedReports.filter(r => r.storeName === shop.name);
               const storeMonths = new Set(storeReports.map(r => r.month));
               return (
-                <div key={store} className="p-3 rounded-lg border bg-card text-center">
-                  <p className="text-sm font-medium" style={{ color: ['#1e3a5f', '#3b82f6', '#10b981'][idx] }}>
-                    {store}
+                <div key={shop.id} className="p-3 rounded-lg border bg-card text-center">
+                  <p className="text-sm font-medium" style={{ color: getShopColor(shop.name!) }}>
+                    {shop.name}
                   </p>
                   <p className="text-2xl font-bold mt-1">{storeReports.length}</p>
                   <p className="text-xs text-muted-foreground">报表 · {storeMonths.size}个月</p>
