@@ -385,7 +385,7 @@ export default function ImportPage() {
         '月度仓储费', '超龄附加费', '▶ 仓储费合计',
         '清算手续费', '库存赔偿', 'SAFE-T赔付', '退款-其他', '退货运费',
         '弃置费', '订阅费(均摊)', '其他调整（均摊）', '入库配置费', '订单移除费',
-        '广告费', '头程', '成本', ...(skuRows[0]?.deliveryFeeByProvider ? Object.keys(skuRows[0].deliveryFeeByProvider) : ['乐歌尾程', '京东尾程']), '刷单费',
+        '广告费', '头程', '成本', ...(skuRows[0]?.deliveryFeeByProvider ? Object.keys(skuRows[0].deliveryFeeByProvider) : ['尾程运费']), '刷单费',
         '▶ SKU净收入', '利润率(%)', '负责人'],
     ];
     for (const row of skuRows) {
@@ -492,13 +492,13 @@ export default function ImportPage() {
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold tracking-tight">数据导入</h1>
-        <p className="text-sm text-muted-foreground mt-1">
+        <p className="text-sm text-[#6E6E73] mt-1">
           上传多种亚马逊报表，系统自动合并分析，生成完整利润报表
         </p>
       </div>
 
       {/* 店铺数据概览 */}
-      <Card className="shadow-sm border-0">
+      <Card className="border-0 rounded-2xl apple-card">
         <CardHeader className="pb-3">
           <CardTitle className="text-base flex items-center gap-2">
             <Warehouse className="h-4 w-4 text-primary" />
@@ -511,12 +511,12 @@ export default function ImportPage() {
               const storeReports = uploadedReports.filter(r => r.storeName === shop.name);
               const storeMonths = new Set(storeReports.map(r => r.month));
               return (
-                <div key={shop.id} className="p-3 rounded-lg border border-border/50 bg-card text-center hover:shadow-sm transition-shadow">
+                <div key={shop.id} className="p-3 rounded-lg border border-[#E5E5EA]/50 bg-card text-center hover:shadow-sm transition-shadow">
                   <p className="text-sm font-medium" style={{ color: getShopColor(shop.name!) }}>
                     {shop.name}
                   </p>
                   <p className="text-2xl font-bold mt-1">{storeReports.length}</p>
-                  <p className="text-xs text-muted-foreground">报表 · {storeMonths.size}个月</p>
+                  <p className="text-xs text-[#6E6E73]">报表 · {storeMonths.size}个月</p>
                 </div>
               );
             })}
@@ -525,7 +525,7 @@ export default function ImportPage() {
       </Card>
 
       {/* 报表类型选择器 */}
-      <Card className="shadow-sm border-0">
+      <Card className="border-0 rounded-2xl apple-card">
         <CardHeader className="pb-3">
           <CardTitle className="text-base flex items-center gap-2">
             <Layers className="h-4 w-4 text-primary" />
@@ -563,7 +563,7 @@ export default function ImportPage() {
       </Card>
 
       {/* 上传区域 */}
-      <Card className="shadow-sm border-0">
+      <Card className="border-0 rounded-2xl apple-card">
         <CardHeader>
           <CardTitle className="text-base">
             {reportType === 'auto' ? '上传文件（自动识别类型）' : `上传${REPORT_TYPE_LABELS[currentReportType]}`}
@@ -574,7 +574,7 @@ export default function ImportPage() {
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex items-center gap-2">
-            <span className="text-sm font-medium text-muted-foreground">选择店铺：</span>
+            <span className="text-sm font-medium text-[#6E6E73]">选择店铺：</span>
             <ShopFilter
               value={uploadStore}
               onChange={setUploadStore}
@@ -582,7 +582,7 @@ export default function ImportPage() {
             />
           </div>
           <div
-            className="border-2 border-dashed rounded-lg p-8 text-center hover:border-primary/50 transition-colors cursor-pointer bg-muted/30"
+            className="border-2 border-dashed rounded-lg p-8 text-center hover:border-primary/50 transition-colors cursor-pointer bg-[#F5F5F7]/30"
             onDrop={handleFileDrop}
             onDragOver={(e) => e.preventDefault()}
             onClick={() => document.getElementById('file-upload')?.click()}
@@ -597,20 +597,20 @@ export default function ImportPage() {
             {parsing ? (
               <div className="flex flex-col items-center gap-2">
                 <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                <p className="text-sm text-muted-foreground">正在解析文件...</p>
+                <p className="text-sm text-[#6E6E73]">正在解析文件...</p>
               </div>
             ) : (
               <div className="flex flex-col items-center gap-2">
-                <Upload className="h-8 w-8 text-muted-foreground" />
+                <Upload className="h-8 w-8 text-[#6E6E73]" />
                 <p className="text-sm font-medium">拖拽文件到此处，或点击上传</p>
-                <p className="text-xs text-muted-foreground">
+                <p className="text-xs text-[#6E6E73]">
                   支持 .xlsx .xls .csv 格式
                 </p>
               </div>
             )}
           </div>
           {error && (
-            <div className="flex items-center gap-2 mt-3 text-sm text-red-500">
+            <div className="flex items-center gap-2 mt-3 text-sm text-[#FF3B30]">
               <AlertCircle className="h-4 w-4" />
               <span>{error}</span>
             </div>
@@ -620,7 +620,7 @@ export default function ImportPage() {
 
       {/* 已上传报表列表 */}
       {uploadedReports.length > 0 && (
-        <Card className="shadow-sm border-0">
+        <Card className="border-0 rounded-2xl apple-card">
           <CardHeader className="pb-3">
             <CardTitle className="text-base flex items-center gap-2">
               <FileSpreadsheet className="h-4 w-4 text-primary" />
@@ -632,21 +632,21 @@ export default function ImportPage() {
               {uploadedReports.map((report) => (
                 <div
                   key={report.id}
-                  className="flex items-center justify-between p-3 rounded-lg border border-border/50 bg-card hover:shadow-sm transition-shadow"
+                  className="flex items-center justify-between p-3 rounded-lg border border-[#E5E5EA]/50 bg-card hover:shadow-sm transition-shadow"
                 >
                   <div className="flex items-center gap-3">
                     <div
-                      className="w-8 h-8 rounded-lg flex items-center justify-center bg-muted"
+                      className="w-8 h-8 rounded-lg flex items-center justify-center bg-[#F5F5F7]"
                     >
                       <ReportTypeIcon
                         type={report.reportType}
-                        className="h-4 w-4 text-muted-foreground"
+                        className="h-4 w-4 text-[#6E6E73]"
                       />
                     </div>
                     <div>
                       <div className="flex items-center gap-2">
                         <span className="text-sm font-medium">{report.fileName}</span>
-                        <Badge variant="outline" className="text-xs border-border/50">
+                        <Badge variant="outline" className="text-xs border-[#E5E5EA]/50">
                           {REPORT_TYPE_LABELS[report.reportType]}
                         </Badge>
                         <Badge
@@ -655,11 +655,11 @@ export default function ImportPage() {
                         >
                           {report.status === 'merged' ? '已合并' : '已解析'}
                         </Badge>
-                        <Badge variant="outline" className="text-xs border-border/50 text-muted-foreground">
+                        <Badge variant="outline" className="text-xs border-[#E5E5EA]/50 text-[#6E6E73]">
                           {report.storeName || '一店'}
                         </Badge>
                       </div>
-                      <p className="text-xs text-muted-foreground mt-0.5">
+                      <p className="text-xs text-[#6E6E73] mt-0.5">
                         {report.month} · {report.storeName} · {report.rowCount} 行
                       </p>
                     </div>
@@ -667,7 +667,7 @@ export default function ImportPage() {
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="h-8 w-8 text-muted-foreground hover:text-red-500"
+                    className="h-8 w-8 text-[#6E6E73] hover:text-[#FF3B30]"
                     onClick={() => removeReport(report.id)}
                   >
                     <Trash2 className="h-4 w-4" />
@@ -682,7 +682,7 @@ export default function ImportPage() {
       {/* 预览 & 结果 */}
       {(transactionResult || storageFeeItems || adReportItems || returnReportItems || settlementReport) && (
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="flex-wrap bg-muted/50 p-1 rounded-lg">
+          <TabsList className="flex-wrap bg-[#F5F5F7] p-1 rounded-lg">
             <TabsTrigger value="preview" disabled={!transactionResult} className="rounded-md">
               交易明细预览
             </TabsTrigger>
@@ -701,30 +701,30 @@ export default function ImportPage() {
           <TabsContent value="preview" className="space-y-4">
             {transactionResult && (
               <>
-                <Card className="shadow-sm border-0">
+                <Card className="border-0 rounded-2xl apple-card">
                   <CardHeader>
                     <CardTitle className="text-base">交易明细解析结果</CardTitle>
                   </CardHeader>
                   <CardContent>
                     <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-                      <div className="p-3 rounded-lg bg-muted/50">
-                        <p className="text-xs text-muted-foreground">月份</p>
+                      <div className="p-3 rounded-lg bg-[#F5F5F7]">
+                        <p className="text-xs text-[#6E6E73]">月份</p>
                         <p className="text-lg font-semibold">{transactionResult.month}</p>
                       </div>
-                      <div className="p-3 rounded-lg bg-muted/50">
-                        <p className="text-xs text-muted-foreground">店铺</p>
+                      <div className="p-3 rounded-lg bg-[#F5F5F7]">
+                        <p className="text-xs text-[#6E6E73]">店铺</p>
                         <p className="text-lg font-semibold">{transactionResult.storeName}</p>
                       </div>
-                      <div className="p-3 rounded-lg bg-muted/50">
-                        <p className="text-xs text-muted-foreground">交易记录</p>
+                      <div className="p-3 rounded-lg bg-[#F5F5F7]">
+                        <p className="text-xs text-[#6E6E73]">交易记录</p>
                         <p className="text-lg font-semibold">{transactionResult.transactions.length}</p>
                       </div>
-                      <div className="p-3 rounded-lg bg-muted/50">
-                        <p className="text-xs text-muted-foreground">共享费用</p>
+                      <div className="p-3 rounded-lg bg-[#F5F5F7]">
+                        <p className="text-xs text-[#6E6E73]">共享费用</p>
                         <p className="text-lg font-semibold">{mergedSharedFees.length}</p>
                       </div>
-                      <div className="p-3 rounded-lg bg-muted/50">
-                        <p className="text-xs text-muted-foreground">其他报表</p>
+                      <div className="p-3 rounded-lg bg-[#F5F5F7]">
+                        <p className="text-xs text-[#6E6E73]">其他报表</p>
                         <p className="text-lg font-semibold">{uploadedReports.length - 1}</p>
                       </div>
                     </div>
@@ -732,10 +732,10 @@ export default function ImportPage() {
                 </Card>
 
                 {/* 确认导入按钮 */}
-                <div className="flex items-center gap-3 p-4 bg-muted/50 border border-border/50 rounded-lg">
+                <div className="flex items-center gap-3 p-4 bg-[#F5F5F7] border border-[#E5E5EA]/50 rounded-lg">
                   <div className="flex-1">
                     <p className="text-sm font-medium text-foreground">确认导入数据</p>
-                    <p className="text-xs text-muted-foreground">
+                    <p className="text-xs text-[#6E6E73]">
                       确认后系统将自动计算利润表，并进入利润表页面。你还可以在「多报表数据」标签页上传其他补充报表后再合并计算。
                     </p>
                   </div>
@@ -761,7 +761,7 @@ export default function ImportPage() {
                   </Button>
                 </div>
 
-                <Card className="shadow-sm border-0">
+                <Card className="border-0 rounded-2xl apple-card">
                   <CardHeader>
                     <CardTitle className="text-base">交易分类明细</CardTitle>
                   </CardHeader>
@@ -769,22 +769,22 @@ export default function ImportPage() {
                     <div className="overflow-x-auto max-h-80 overflow-y-auto">
                       <table className="w-full text-sm">
                         <thead>
-                          <tr className="border-b border-border/50">
-                            <th className="text-left py-2 px-2 text-xs uppercase tracking-wider text-muted-foreground font-medium">类型</th>
-                            <th className="text-left py-2 px-2 text-xs uppercase tracking-wider text-muted-foreground font-medium">SKU</th>
-                            <th className="text-right py-2 px-2 text-xs uppercase tracking-wider text-muted-foreground font-medium">数量</th>
-                            <th className="text-right py-2 px-2 text-xs uppercase tracking-wider text-muted-foreground font-medium">金额</th>
-                            <th className="text-left py-2 px-2 text-xs uppercase tracking-wider text-muted-foreground font-medium">描述</th>
+                          <tr className="border-b border-[#E5E5EA]/50">
+                            <th className="text-left py-2 px-2 text-xs uppercase tracking-wider text-[#6E6E73] font-medium">类型</th>
+                            <th className="text-left py-2 px-2 text-xs uppercase tracking-wider text-[#6E6E73] font-medium">SKU</th>
+                            <th className="text-right py-2 px-2 text-xs uppercase tracking-wider text-[#6E6E73] font-medium">数量</th>
+                            <th className="text-right py-2 px-2 text-xs uppercase tracking-wider text-[#6E6E73] font-medium">金额</th>
+                            <th className="text-left py-2 px-2 text-xs uppercase tracking-wider text-[#6E6E73] font-medium">描述</th>
                           </tr>
                         </thead>
                         <tbody>
                           {transactionResult.transactions.slice(0, 100).map((t, i) => (
-                            <tr key={i} className="border-b border-border/50 hover:bg-muted/20">
+                            <tr key={i} className="border-b border-[#E5E5EA]/50 hover:bg-[#F5F5F7]">
                               <td className="py-2 px-2">
                                 <span className={`inline-block px-2 py-0.5 rounded-md text-xs font-medium ${
-                                  t.type === 'Order' ? 'bg-emerald-100 text-emerald-700' :
-                                  t.type === 'Refund' ? 'bg-red-100 text-red-700' :
-                                  'bg-muted text-muted-foreground'
+                                  t.type === 'Order' ? 'bg-[#34C759]/10 text-[#34C759]' :
+                                  t.type === 'Refund' ? 'bg-[#FF3B30]/10 text-[#FF3B30]' :
+                                  'bg-[#F5F5F7] text-[#6E6E73]'
                                 }`}>
                                   {t.type}
                                 </span>
@@ -792,12 +792,12 @@ export default function ImportPage() {
                               <td className="py-2 px-2 max-w-[120px] truncate">{t.sku}</td>
                               <td className="py-2 px-2 text-right tabular-nums">{t.quantity}</td>
                               <td className="py-2 px-2 text-right tabular-nums">${t.totalAmount.toFixed(2)}</td>
-                              <td className="py-2 px-2 max-w-[200px] truncate text-muted-foreground">{t.description}</td>
+                              <td className="py-2 px-2 max-w-[200px] truncate text-[#6E6E73]">{t.description}</td>
                             </tr>
                           ))}
                           {transactionResult.transactions.length > 100 && (
                             <tr>
-                              <td colSpan={5} className="text-center py-2 text-muted-foreground text-xs">
+                              <td colSpan={5} className="text-center py-2 text-[#6E6E73] text-xs">
                                 仅显示前100条，共 {transactionResult.transactions.length} 条
                               </td>
                             </tr>
@@ -814,7 +814,7 @@ export default function ImportPage() {
           {/* 多报表数据 */}
           <TabsContent value="reports" className="space-y-4">
             {settlementReport && (
-              <Card className="shadow-sm border-0">
+              <Card className="border-0 rounded-2xl apple-card">
                 <CardHeader>
                   <CardTitle className="text-base flex items-center gap-2">
                     <FileCheck className="h-4 w-4 text-purple-500" />
@@ -823,20 +823,20 @@ export default function ImportPage() {
                 </CardHeader>
                 <CardContent>
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
-                    <div className="p-3 rounded-lg bg-muted/50">
-                      <p className="text-xs text-muted-foreground">结算ID</p>
+                    <div className="p-3 rounded-lg bg-[#F5F5F7]">
+                      <p className="text-xs text-[#6E6E73]">结算ID</p>
                       <p className="text-sm font-medium">{settlementReport.settlementId}</p>
                     </div>
-                    <div className="p-3 rounded-lg bg-muted/50">
-                      <p className="text-xs text-muted-foreground">结算总额</p>
+                    <div className="p-3 rounded-lg bg-[#F5F5F7]">
+                      <p className="text-xs text-[#6E6E73]">结算总额</p>
                       <p className="text-lg font-semibold">${settlementReport.totalAmount.toFixed(2)}</p>
                     </div>
-                    <div className="p-3 rounded-lg bg-muted/50">
-                      <p className="text-xs text-muted-foreground">交易笔数</p>
+                    <div className="p-3 rounded-lg bg-[#F5F5F7]">
+                      <p className="text-xs text-[#6E6E73]">交易笔数</p>
                       <p className="text-sm font-medium">{settlementReport.transactionCount}</p>
                     </div>
-                    <div className="p-3 rounded-lg bg-muted/50">
-                      <p className="text-xs text-muted-foreground">结算周期</p>
+                    <div className="p-3 rounded-lg bg-[#F5F5F7]">
+                      <p className="text-xs text-[#6E6E73]">结算周期</p>
                       <p className="text-sm font-medium">{settlementReport.periodStart} ~ {settlementReport.periodEnd}</p>
                     </div>
                   </div>
@@ -845,16 +845,16 @@ export default function ImportPage() {
                     <div className="overflow-x-auto max-h-48 overflow-y-auto">
                       <table className="w-full text-sm">
                         <thead>
-                          <tr className="border-b border-border/50 bg-muted/50">
-                            <th className="text-left py-1 px-2 text-xs uppercase tracking-wider text-muted-foreground font-medium">费用类型</th>
-                            <th className="text-right py-1 px-2 text-xs uppercase tracking-wider text-muted-foreground font-medium">金额</th>
+                          <tr className="border-b border-[#E5E5EA]/50 bg-[#F5F5F7]">
+                            <th className="text-left py-1 px-2 text-xs uppercase tracking-wider text-[#6E6E73] font-medium">费用类型</th>
+                            <th className="text-right py-1 px-2 text-xs uppercase tracking-wider text-[#6E6E73] font-medium">金额</th>
                           </tr>
                         </thead>
                         <tbody>
                           {Object.entries(settlementReport.feeSummary).map(([type, amount], i) => (
-                            <tr key={i} className="border-b border-border/50 hover:bg-muted/20">
+                            <tr key={i} className="border-b border-[#E5E5EA]/50 hover:bg-[#F5F5F7]">
                               <td className="py-1 px-2">{type}</td>
-                              <td className={`py-1 px-2 text-right tabular-nums ${amount < 0 ? 'text-red-500' : 'text-emerald-500'}`}>
+                              <td className={`py-1 px-2 text-right tabular-nums ${amount < 0 ? 'text-[#FF3B30]' : 'text-[#34C759]'}`}>
                                 ${amount.toFixed(2)}
                               </td>
                             </tr>
@@ -868,10 +868,10 @@ export default function ImportPage() {
             )}
 
             {storageFeeItems && storageFeeItems.length > 0 && (
-              <Card className="shadow-sm border-0">
+              <Card className="border-0 rounded-2xl apple-card">
                 <CardHeader>
                   <CardTitle className="text-base flex items-center gap-2">
-                    <Warehouse className="h-4 w-4 text-amber-500" />
+                    <Warehouse className="h-4 w-4 text-[#FF9500]" />
                     仓储费报告 ({storageFeeItems.length} 条)
                   </CardTitle>
                 </CardHeader>
@@ -879,17 +879,17 @@ export default function ImportPage() {
                   <div className="overflow-x-auto max-h-60 overflow-y-auto">
                     <table className="w-full text-sm">
                       <thead>
-                        <tr className="border-b border-border/50 bg-muted/50">
-                          <th className="text-left py-2 px-2 text-xs uppercase tracking-wider text-muted-foreground font-medium">SKU</th>
-                          <th className="text-right py-2 px-2 text-xs uppercase tracking-wider text-muted-foreground font-medium">仓储体积</th>
-                          <th className="text-right py-2 px-2 text-xs uppercase tracking-wider text-muted-foreground font-medium">费率</th>
-                          <th className="text-right py-2 px-2 text-xs uppercase tracking-wider text-muted-foreground font-medium">仓储费</th>
-                          <th className="text-left py-2 px-2 text-xs uppercase tracking-wider text-muted-foreground font-medium">月份</th>
+                        <tr className="border-b border-[#E5E5EA]/50 bg-[#F5F5F7]">
+                          <th className="text-left py-2 px-2 text-xs uppercase tracking-wider text-[#6E6E73] font-medium">SKU</th>
+                          <th className="text-right py-2 px-2 text-xs uppercase tracking-wider text-[#6E6E73] font-medium">仓储体积</th>
+                          <th className="text-right py-2 px-2 text-xs uppercase tracking-wider text-[#6E6E73] font-medium">费率</th>
+                          <th className="text-right py-2 px-2 text-xs uppercase tracking-wider text-[#6E6E73] font-medium">仓储费</th>
+                          <th className="text-left py-2 px-2 text-xs uppercase tracking-wider text-[#6E6E73] font-medium">月份</th>
                         </tr>
                       </thead>
                       <tbody>
                         {storageFeeItems.map((item, i) => (
-                          <tr key={i} className="border-b border-border/50 hover:bg-muted/20">
+                          <tr key={i} className="border-b border-[#E5E5EA]/50 hover:bg-[#F5F5F7]">
                             <td className="py-2 px-2 max-w-[120px] truncate">{item.sku}</td>
                             <td className="py-2 px-2 text-right tabular-nums">{item.volumeCubicFeet.toFixed(4)}</td>
                             <td className="py-2 px-2 text-right tabular-nums">${item.rate.toFixed(4)}</td>
@@ -905,53 +905,53 @@ export default function ImportPage() {
             )}
 
             {adReportItems && adReportItems.length > 0 && (
-              <Card className="shadow-sm border-0">
+              <Card className="border-0 rounded-2xl apple-card">
                 <CardHeader>
                   <CardTitle className="text-base flex items-center gap-2">
-                    <BarChart3 className="h-4 w-4 text-red-500" />
+                    <BarChart3 className="h-4 w-4 text-[#FF3B30]" />
                     广告报告 ({adReportItems.length} 条)
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
-                    <div className="p-3 rounded-lg bg-muted/50">
-                      <p className="text-xs text-muted-foreground">总花费</p>
-                      <p className="text-lg font-semibold text-red-500">
+                    <div className="p-3 rounded-lg bg-[#F5F5F7]">
+                      <p className="text-xs text-[#6E6E73]">总花费</p>
+                      <p className="text-lg font-semibold text-[#FF3B30]">
                         ${adReportItems.reduce((s, i) => s + i.spend, 0).toFixed(2)}
                       </p>
                     </div>
-                    <div className="p-3 rounded-lg bg-muted/50">
-                      <p className="text-xs text-muted-foreground">总销售额</p>
-                      <p className="text-lg font-semibold text-emerald-500">
+                    <div className="p-3 rounded-lg bg-[#F5F5F7]">
+                      <p className="text-xs text-[#6E6E73]">总销售额</p>
+                      <p className="text-lg font-semibold text-[#34C759]">
                         ${adReportItems.reduce((s, i) => s + i.sales, 0).toFixed(2)}
                       </p>
                     </div>
-                    <div className="p-3 rounded-lg bg-muted/50">
-                      <p className="text-xs text-muted-foreground">总点击</p>
+                    <div className="p-3 rounded-lg bg-[#F5F5F7]">
+                      <p className="text-xs text-[#6E6E73]">总点击</p>
                       <p className="text-lg font-semibold tabular-nums">{adReportItems.reduce((s, i) => s + i.clicks, 0)}</p>
                     </div>
-                    <div className="p-3 rounded-lg bg-muted/50">
-                      <p className="text-xs text-muted-foreground">总曝光</p>
+                    <div className="p-3 rounded-lg bg-[#F5F5F7]">
+                      <p className="text-xs text-[#6E6E73]">总曝光</p>
                       <p className="text-lg font-semibold tabular-nums">{adReportItems.reduce((s, i) => s + i.impressions, 0)}</p>
                     </div>
                   </div>
                   <div className="overflow-x-auto max-h-60 overflow-y-auto">
                     <table className="w-full text-sm">
                       <thead>
-                        <tr className="border-b border-border/50 bg-muted/50">
-                          <th className="text-left py-2 px-2 text-xs uppercase tracking-wider text-muted-foreground font-medium">活动</th>
-                          <th className="text-left py-2 px-2 text-xs uppercase tracking-wider text-muted-foreground font-medium">类型</th>
-                          <th className="text-right py-2 px-2 text-xs uppercase tracking-wider text-muted-foreground font-medium">花费</th>
-                          <th className="text-right py-2 px-2 text-xs uppercase tracking-wider text-muted-foreground font-medium">销售额</th>
-                          <th className="text-right py-2 px-2 text-xs uppercase tracking-wider text-muted-foreground font-medium">ACoS</th>
+                        <tr className="border-b border-[#E5E5EA]/50 bg-[#F5F5F7]">
+                          <th className="text-left py-2 px-2 text-xs uppercase tracking-wider text-[#6E6E73] font-medium">活动</th>
+                          <th className="text-left py-2 px-2 text-xs uppercase tracking-wider text-[#6E6E73] font-medium">类型</th>
+                          <th className="text-right py-2 px-2 text-xs uppercase tracking-wider text-[#6E6E73] font-medium">花费</th>
+                          <th className="text-right py-2 px-2 text-xs uppercase tracking-wider text-[#6E6E73] font-medium">销售额</th>
+                          <th className="text-right py-2 px-2 text-xs uppercase tracking-wider text-[#6E6E73] font-medium">ACoS</th>
                         </tr>
                       </thead>
                       <tbody>
                         {adReportItems.slice(0, 50).map((item, i) => (
-                          <tr key={i} className="border-b border-border/50 hover:bg-muted/20">
+                          <tr key={i} className="border-b border-[#E5E5EA]/50 hover:bg-[#F5F5F7]">
                             <td className="py-2 px-2 max-w-[150px] truncate">{item.campaignName}</td>
                             <td className="py-2 px-2">
-                              <Badge variant="outline" className="text-xs border-border/50">{item.campaignType}</Badge>
+                              <Badge variant="outline" className="text-xs border-[#E5E5EA]/50">{item.campaignType}</Badge>
                             </td>
                             <td className="py-2 px-2 text-right tabular-nums">${item.spend.toFixed(2)}</td>
                             <td className="py-2 px-2 text-right tabular-nums">${item.sales.toFixed(2)}</td>
@@ -966,10 +966,10 @@ export default function ImportPage() {
             )}
 
             {returnReportItems && returnReportItems.length > 0 && (
-              <Card className="shadow-sm border-0">
+              <Card className="border-0 rounded-2xl apple-card">
                 <CardHeader>
                   <CardTitle className="text-base flex items-center gap-2">
-                    <Undo2 className="h-4 w-4 text-emerald-500" />
+                    <Undo2 className="h-4 w-4 text-[#34C759]" />
                     退货报告 ({returnReportItems.length} 条)
                   </CardTitle>
                 </CardHeader>
@@ -977,20 +977,20 @@ export default function ImportPage() {
                   <div className="overflow-x-auto max-h-60 overflow-y-auto">
                     <table className="w-full text-sm">
                       <thead>
-                        <tr className="border-b border-border/50 bg-muted/50">
-                          <th className="text-left py-2 px-2 text-xs uppercase tracking-wider text-muted-foreground font-medium">SKU</th>
-                          <th className="text-right py-2 px-2 text-xs uppercase tracking-wider text-muted-foreground font-medium">退货数量</th>
-                          <th className="text-right py-2 px-2 text-xs uppercase tracking-wider text-muted-foreground font-medium">退款金额</th>
-                          <th className="text-left py-2 px-2 text-xs uppercase tracking-wider text-muted-foreground font-medium">原因</th>
+                        <tr className="border-b border-[#E5E5EA]/50 bg-[#F5F5F7]">
+                          <th className="text-left py-2 px-2 text-xs uppercase tracking-wider text-[#6E6E73] font-medium">SKU</th>
+                          <th className="text-right py-2 px-2 text-xs uppercase tracking-wider text-[#6E6E73] font-medium">退货数量</th>
+                          <th className="text-right py-2 px-2 text-xs uppercase tracking-wider text-[#6E6E73] font-medium">退款金额</th>
+                          <th className="text-left py-2 px-2 text-xs uppercase tracking-wider text-[#6E6E73] font-medium">原因</th>
                         </tr>
                       </thead>
                       <tbody>
                         {returnReportItems.map((item, i) => (
-                          <tr key={i} className="border-b border-border/50 hover:bg-muted/20">
+                          <tr key={i} className="border-b border-[#E5E5EA]/50 hover:bg-[#F5F5F7]">
                             <td className="py-2 px-2 max-w-[120px] truncate">{item.sku}</td>
                             <td className="py-2 px-2 text-right tabular-nums">{item.returnQuantity}</td>
                             <td className="py-2 px-2 text-right tabular-nums">${item.refundAmount.toFixed(2)}</td>
-                            <td className="py-2 px-2 max-w-[200px] truncate text-muted-foreground">{item.returnReason}</td>
+                            <td className="py-2 px-2 max-w-[200px] truncate text-[#6E6E73]">{item.returnReason}</td>
                           </tr>
                         ))}
                       </tbody>
@@ -1001,7 +1001,7 @@ export default function ImportPage() {
             )}
 
             {productCostItems && productCostItems.length > 0 && (
-              <Card className="shadow-sm border-0">
+              <Card className="border-0 rounded-2xl apple-card">
                 <CardHeader>
                   <CardTitle className="text-base flex items-center gap-2">
                     <DollarSign className="h-4 w-4 text-sky-500" />
@@ -1012,17 +1012,17 @@ export default function ImportPage() {
                   <div className="overflow-x-auto max-h-60 overflow-y-auto">
                     <table className="w-full text-sm">
                       <thead>
-                        <tr className="border-b border-border/50 bg-muted/50">
-                          <th className="text-left py-2 px-2 text-xs uppercase tracking-wider text-muted-foreground font-medium">SKU</th>
-                          <th className="text-left py-2 px-2 text-xs uppercase tracking-wider text-muted-foreground font-medium">产品名称</th>
-                          <th className="text-right py-2 px-2 text-xs uppercase tracking-wider text-muted-foreground font-medium">FOB/采购价</th>
+                        <tr className="border-b border-[#E5E5EA]/50 bg-[#F5F5F7]">
+                          <th className="text-left py-2 px-2 text-xs uppercase tracking-wider text-[#6E6E73] font-medium">SKU</th>
+                          <th className="text-left py-2 px-2 text-xs uppercase tracking-wider text-[#6E6E73] font-medium">产品名称</th>
+                          <th className="text-right py-2 px-2 text-xs uppercase tracking-wider text-[#6E6E73] font-medium">FOB/采购价</th>
                         </tr>
                       </thead>
                       <tbody>
                         {productCostItems.map((item, i) => (
-                          <tr key={i} className="border-b border-border/50 hover:bg-muted/20">
+                          <tr key={i} className="border-b border-[#E5E5EA]/50 hover:bg-[#F5F5F7]">
                             <td className="py-2 px-2 max-w-[120px] truncate">{item.sku}</td>
-                            <td className="py-2 px-2 max-w-[200px] truncate text-muted-foreground">{item.productName}</td>
+                            <td className="py-2 px-2 max-w-[200px] truncate text-[#6E6E73]">{item.productName}</td>
                             <td className="py-2 px-2 text-right font-medium tabular-nums">${item.fobCost.toFixed(2)}</td>
                           </tr>
                         ))}
@@ -1034,7 +1034,7 @@ export default function ImportPage() {
             )}
 
             {deliveryFeeItems && deliveryFeeItems.length > 0 && (
-              <Card className="shadow-sm border-0">
+              <Card className="border-0 rounded-2xl apple-card">
                 <CardHeader>
                   <CardTitle className="text-base flex items-center gap-2">
                     <Truck className="h-4 w-4 text-indigo-500" />
@@ -1043,34 +1043,34 @@ export default function ImportPage() {
                 </CardHeader>
                 <CardContent>
                   <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-4">
-                    <div className="p-3 rounded-lg bg-muted/50">
-                      <p className="text-xs text-muted-foreground">总运费</p>
+                    <div className="p-3 rounded-lg bg-[#F5F5F7]">
+                      <p className="text-xs text-[#6E6E73]">总运费</p>
                       <p className="text-lg font-semibold tabular-nums">${deliveryFeeItems.reduce((s, i) => s + i.deliveryFee, 0).toFixed(2)}</p>
                     </div>
-                    <div className="p-3 rounded-lg bg-muted/50">
-                      <p className="text-xs text-muted-foreground">最大单笔</p>
+                    <div className="p-3 rounded-lg bg-[#F5F5F7]">
+                      <p className="text-xs text-[#6E6E73]">最大单笔</p>
                       <p className="text-lg font-semibold tabular-nums">${Math.max(...deliveryFeeItems.map(i => i.deliveryFee)).toFixed(2)}</p>
                     </div>
-                    <div className="p-3 rounded-lg bg-muted/50">
-                      <p className="text-xs text-muted-foreground">涉及SKU数</p>
+                    <div className="p-3 rounded-lg bg-[#F5F5F7]">
+                      <p className="text-xs text-[#6E6E73]">涉及SKU数</p>
                       <p className="text-lg font-semibold tabular-nums">{new Set(deliveryFeeItems.map(i => i.sku)).size}</p>
                     </div>
                   </div>
                   <div className="overflow-x-auto max-h-60 overflow-y-auto">
                     <table className="w-full text-sm">
                       <thead>
-                        <tr className="border-b border-border/50 bg-muted/50">
-                          <th className="text-left py-2 px-2 text-xs uppercase tracking-wider text-muted-foreground font-medium">SKU</th>
-                          <th className="text-left py-2 px-2 text-xs uppercase tracking-wider text-muted-foreground font-medium">订单号</th>
-                          <th className="text-right py-2 px-2 text-xs uppercase tracking-wider text-muted-foreground font-medium">运费</th>
-                          <th className="text-left py-2 px-2 text-xs uppercase tracking-wider text-muted-foreground font-medium">承运商</th>
+                        <tr className="border-b border-[#E5E5EA]/50 bg-[#F5F5F7]">
+                          <th className="text-left py-2 px-2 text-xs uppercase tracking-wider text-[#6E6E73] font-medium">SKU</th>
+                          <th className="text-left py-2 px-2 text-xs uppercase tracking-wider text-[#6E6E73] font-medium">订单号</th>
+                          <th className="text-right py-2 px-2 text-xs uppercase tracking-wider text-[#6E6E73] font-medium">运费</th>
+                          <th className="text-left py-2 px-2 text-xs uppercase tracking-wider text-[#6E6E73] font-medium">承运商</th>
                         </tr>
                       </thead>
                       <tbody>
                         {deliveryFeeItems.map((item, i) => (
-                          <tr key={i} className="border-b border-border/50 hover:bg-muted/20">
+                          <tr key={i} className="border-b border-[#E5E5EA]/50 hover:bg-[#F5F5F7]">
                             <td className="py-2 px-2 max-w-[120px] truncate">{item.sku}</td>
-                            <td className="py-2 px-2 max-w-[140px] truncate text-muted-foreground">{item.orderId}</td>
+                            <td className="py-2 px-2 max-w-[140px] truncate text-[#6E6E73]">{item.orderId}</td>
                             <td className="py-2 px-2 text-right font-medium tabular-nums">${item.deliveryFee.toFixed(2)}</td>
                             <td className="py-2 px-2 max-w-[100px] truncate">{item.carrier || '-'}</td>
                           </tr>
@@ -1097,7 +1097,7 @@ export default function ImportPage() {
                 )}
               </Button>
               {uploadedReports.length > 1 && (
-                <p className="text-xs text-muted-foreground ml-2">
+                <p className="text-xs text-[#6E6E73] ml-2">
                   已上传 {uploadedReports.length} 种报表，将自动合并数据
                 </p>
               )}
@@ -1106,12 +1106,12 @@ export default function ImportPage() {
 
           {/* 利润表 */}
           <TabsContent value="profit" className="space-y-4">
-            <Card className="shadow-sm border-0">
+            <Card className="border-0 rounded-2xl apple-card">
               <CardHeader className="flex flex-row items-center justify-between">
                 <div>
                   <CardTitle className="text-base">SKU利润表</CardTitle>
                   {uploadedReports.length > 1 && (
-                    <p className="text-xs text-muted-foreground mt-1">
+                    <p className="text-xs text-[#6E6E73] mt-1">
                       数据来源：{uploadedReports.map(r => REPORT_TYPE_LABELS[r.reportType]).join(' + ')}
                     </p>
                   )}
@@ -1129,8 +1129,8 @@ export default function ImportPage() {
               <CardContent>
                 {skuRows.length === 0 ? (
                   <div className="text-center py-8">
-                    <p className="text-muted-foreground mb-2">尚未计算利润表</p>
-                    <p className="text-sm text-muted-foreground">
+                    <p className="text-[#6E6E73] mb-2">尚未计算利润表</p>
+                    <p className="text-sm text-[#6E6E73]">
                       请先在「交易明细预览」标签页点击 <strong>确认导入</strong> 按钮，或切换到「多报表数据」标签页上传补充报表后再合并计算
                     </p>
                   </div>
@@ -1138,32 +1138,32 @@ export default function ImportPage() {
                   <div className="overflow-x-auto max-h-[600px] overflow-y-auto">
                     <table className="w-full text-sm">
                       <thead className="sticky top-0 bg-card z-10">
-                        <tr className="border-b border-border/50 bg-muted/50">
-                          <th className="text-left py-2 px-2 text-xs uppercase tracking-wider text-muted-foreground font-medium">SKU</th>
-                          <th className="text-right py-2 px-2 text-xs uppercase tracking-wider text-muted-foreground font-medium">订单量</th>
-                          <th className="text-right py-2 px-2 text-xs uppercase tracking-wider text-muted-foreground font-medium">退款量</th>
-                          <th className="text-right py-2 px-2 text-xs uppercase tracking-wider text-muted-foreground font-medium">净销售额</th>
-                          <th className="text-right py-2 px-2 text-xs uppercase tracking-wider text-muted-foreground font-medium">净佣金</th>
-                          <th className="text-right py-2 px-2 text-xs uppercase tracking-wider text-muted-foreground font-medium">净FBA费</th>
-                          <th className="text-right py-2 px-2 text-xs uppercase tracking-wider text-muted-foreground font-medium">
+                        <tr className="border-b border-[#E5E5EA]/50 bg-[#F5F5F7]">
+                          <th className="text-left py-2 px-2 text-xs uppercase tracking-wider text-[#6E6E73] font-medium">SKU</th>
+                          <th className="text-right py-2 px-2 text-xs uppercase tracking-wider text-[#6E6E73] font-medium">订单量</th>
+                          <th className="text-right py-2 px-2 text-xs uppercase tracking-wider text-[#6E6E73] font-medium">退款量</th>
+                          <th className="text-right py-2 px-2 text-xs uppercase tracking-wider text-[#6E6E73] font-medium">净销售额</th>
+                          <th className="text-right py-2 px-2 text-xs uppercase tracking-wider text-[#6E6E73] font-medium">净佣金</th>
+                          <th className="text-right py-2 px-2 text-xs uppercase tracking-wider text-[#6E6E73] font-medium">净FBA费</th>
+                          <th className="text-right py-2 px-2 text-xs uppercase tracking-wider text-[#6E6E73] font-medium">
                             仓储费
                             <span className="ml-1 text-[10px]">(来源)</span>
                           </th>
-                          <th className="text-right py-2 px-2 text-xs uppercase tracking-wider text-muted-foreground font-medium">
+                          <th className="text-right py-2 px-2 text-xs uppercase tracking-wider text-[#6E6E73] font-medium">
                             广告费
                             <span className="ml-1 text-[10px]">(来源)</span>
                           </th>
-                          <th className="text-right py-2 px-2 text-xs uppercase tracking-wider text-muted-foreground font-medium">入库配置费</th>
-                          <th className="text-right py-2 px-2 text-xs uppercase tracking-wider text-muted-foreground font-medium">退货处理费</th>
-                          <th className="text-right py-2 px-2 text-xs uppercase tracking-wider text-muted-foreground font-medium">订阅费</th>
-                          <th className="text-right py-2 px-2 text-xs uppercase tracking-wider text-muted-foreground font-medium">其他调整</th>
-                          <th className="text-right py-2 px-2 text-xs uppercase tracking-wider text-muted-foreground font-medium">SKU净收入</th>
-                          <th className="text-right py-2 px-2 text-xs uppercase tracking-wider text-muted-foreground font-medium">利润率</th>
+                          <th className="text-right py-2 px-2 text-xs uppercase tracking-wider text-[#6E6E73] font-medium">入库配置费</th>
+                          <th className="text-right py-2 px-2 text-xs uppercase tracking-wider text-[#6E6E73] font-medium">退货处理费</th>
+                          <th className="text-right py-2 px-2 text-xs uppercase tracking-wider text-[#6E6E73] font-medium">订阅费</th>
+                          <th className="text-right py-2 px-2 text-xs uppercase tracking-wider text-[#6E6E73] font-medium">其他调整</th>
+                          <th className="text-right py-2 px-2 text-xs uppercase tracking-wider text-[#6E6E73] font-medium">SKU净收入</th>
+                          <th className="text-right py-2 px-2 text-xs uppercase tracking-wider text-[#6E6E73] font-medium">利润率</th>
                         </tr>
                       </thead>
                       <tbody>
                         {skuRows.map((row, i) => (
-                          <tr key={i} className="border-b border-border/50 hover:bg-muted/20">
+                          <tr key={i} className="border-b border-[#E5E5EA]/50 hover:bg-[#F5F5F7]">
                             <td className="py-2 px-2 font-medium max-w-[100px] truncate text-xs">{row.sku}</td>
                             <td className="py-2 px-2 text-right text-xs tabular-nums">{row.orderQuantity}</td>
                             <td className="py-2 px-2 text-right text-xs tabular-nums">{row.refundQuantity}</td>
@@ -1173,8 +1173,8 @@ export default function ImportPage() {
                             <td className="py-2 px-2 text-right text-xs">
                               <span className="font-medium tabular-nums">${row.monthlyStorageFee.toFixed(2)}</span>
                               <span className={`ml-1 text-[10px] ${
-                                row.dataSources?.storageFee === 'storage_report' ? 'text-amber-500' :
-                                row.dataSources?.storageFee === 'merged' ? 'text-primary' : 'text-muted-foreground'
+                                row.dataSources?.storageFee === 'storage_report' ? 'text-[#FF9500]' :
+                                row.dataSources?.storageFee === 'merged' ? 'text-primary' : 'text-[#6E6E73]'
                               }`}>
                                 {row.dataSources?.storageFee === 'storage_report' ? '📋' :
                                  row.dataSources?.storageFee === 'merged' ? '🔄' : ''}
@@ -1183,8 +1183,8 @@ export default function ImportPage() {
                             <td className="py-2 px-2 text-right text-xs">
                               <span className="font-medium tabular-nums">${row.adFee.toFixed(2)}</span>
                               <span className={`ml-1 text-[10px] ${
-                                row.dataSources?.adFee === 'ad_report' ? 'text-red-500' :
-                                row.dataSources?.adFee === 'merged' ? 'text-primary' : 'text-muted-foreground'
+                                row.dataSources?.adFee === 'ad_report' ? 'text-[#FF3B30]' :
+                                row.dataSources?.adFee === 'merged' ? 'text-primary' : 'text-[#6E6E73]'
                               }`}>
                                 {row.dataSources?.adFee === 'ad_report' ? '📋' :
                                  row.dataSources?.adFee === 'merged' ? '🔄' : ''}
@@ -1194,14 +1194,14 @@ export default function ImportPage() {
                             <td className="py-2 px-2 text-right text-xs tabular-nums">${row.returnFee.toFixed(2)}</td>
                             <td className="py-2 px-2 text-right text-xs tabular-nums">${row.subscriptionFee.toFixed(2)}</td>
                             <td className="py-2 px-2 text-right text-xs tabular-nums">${row.otherAdjustment.toFixed(2)}</td>
-                            <td className={`py-2 px-2 text-right font-semibold text-xs tabular-nums ${row.netIncome >= 0 ? 'text-emerald-500' : 'text-red-500'}`}>
+                            <td className={`py-2 px-2 text-right font-semibold text-xs tabular-nums ${row.netIncome >= 0 ? 'text-[#34C759]' : 'text-[#FF3B30]'}`}>
                               ${row.netIncome.toFixed(2)}
                             </td>
                             <td className="py-2 px-2 text-right">
                               <span className={`inline-block px-1.5 py-0.5 rounded-md text-[10px] font-medium ${
-                                row.profitMargin >= 0.2 ? 'bg-emerald-100 text-emerald-700' :
-                                row.profitMargin >= 0 ? 'bg-amber-100 text-amber-700' :
-                                'bg-red-100 text-red-700'
+                                row.profitMargin >= 0.2 ? 'bg-[#34C759]/10 text-[#34C759]' :
+                                row.profitMargin >= 0 ? 'bg-[#FF9500]/10 text-[#FF9500]' :
+                                'bg-[#FF3B30]/10 text-[#FF3B30]'
                               }`}>
                                 {(row.profitMargin * 100).toFixed(1)}%
                               </span>
@@ -1213,7 +1213,7 @@ export default function ImportPage() {
                   </div>
                 )}
                 {skuRows.length > 0 && (
-                  <div className="mt-3 text-xs text-muted-foreground flex items-center gap-4">
+                  <div className="mt-3 text-xs text-[#6E6E73] flex items-center gap-4">
                     <span>📋 来自报表数据</span>
                     <span>🔄 多源合并数据</span>
                     <span>无标记 = 来自交易明细</span>
@@ -1225,7 +1225,7 @@ export default function ImportPage() {
 
           {/* 收支核对 */}
           <TabsContent value="reconciliation" className="space-y-4">
-            <Card className="shadow-sm border-0">
+            <Card className="border-0 rounded-2xl apple-card">
               <CardHeader>
                 <CardTitle className="text-base">全局收支核对</CardTitle>
               </CardHeader>
@@ -1233,21 +1233,21 @@ export default function ImportPage() {
                 {reconciliation ? (
                   <div className="space-y-4">
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                      <div className="bg-muted/50 rounded-lg p-4">
-                        <p className="text-xs text-muted-foreground font-medium">SKU净收入汇总</p>
+                      <div className="bg-[#F5F5F7] rounded-lg p-4">
+                        <p className="text-xs text-[#6E6E73] font-medium">SKU净收入汇总</p>
                         <p className="text-2xl font-bold tabular-nums">${reconciliation.skuNetIncome.toFixed(2)}</p>
                       </div>
-                      <div className="bg-muted/50 rounded-lg p-4">
-                        <p className="text-xs text-muted-foreground font-medium">共享费用汇总</p>
+                      <div className="bg-[#F5F5F7] rounded-lg p-4">
+                        <p className="text-xs text-[#6E6E73] font-medium">共享费用汇总</p>
                         <p className="text-2xl font-bold tabular-nums">${reconciliation.sharedFeeTotal.toFixed(2)}</p>
                       </div>
-                      <div className="bg-muted/50 rounded-lg p-4">
-                        <p className="text-xs text-muted-foreground font-medium">净收入</p>
+                      <div className="bg-[#F5F5F7] rounded-lg p-4">
+                        <p className="text-xs text-[#6E6E73] font-medium">净收入</p>
                         <p className="text-2xl font-bold tabular-nums">${reconciliation.totalNetIncome.toFixed(2)}</p>
                       </div>
-                      <div className={`rounded-lg p-4 ${Math.abs(reconciliation.difference) < 0.01 ? 'bg-emerald-50' : 'bg-red-50'}`}>
-                        <p className="text-xs font-medium text-muted-foreground">账单差异</p>
-                        <p className={`text-2xl font-bold tabular-nums ${Math.abs(reconciliation.difference) < 0.01 ? 'text-emerald-500' : 'text-red-500'}`}>
+                      <div className={`rounded-lg p-4 ${Math.abs(reconciliation.difference) < 0.01 ? 'bg-[#34C759]/10' : 'bg-[#FF3B30]/10'}`}>
+                        <p className="text-xs font-medium text-[#6E6E73]">账单差异</p>
+                        <p className={`text-2xl font-bold tabular-nums ${Math.abs(reconciliation.difference) < 0.01 ? 'text-[#34C759]' : 'text-[#FF3B30]'}`}>
                           ${reconciliation.difference.toFixed(2)}
                         </p>
                         <p className="text-xs mt-1">
@@ -1258,25 +1258,25 @@ export default function ImportPage() {
 
                     {/* 结算报告交叉验证 */}
                     {reconciliation.settlementTotal !== undefined && (
-                      <div className="border border-border/50 rounded-lg p-4 bg-muted/30">
+                      <div className="border border-[#E5E5EA]/50 rounded-lg p-4 bg-[#F5F5F7]/30">
                         <h3 className="text-sm font-medium mb-2 flex items-center gap-2">
                           <FileCheck className="h-4 w-4 text-purple-500" />
                           结算报告交叉验证
                         </h3>
                         <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                           <div>
-                            <p className="text-xs text-muted-foreground">结算报告总额</p>
+                            <p className="text-xs text-[#6E6E73]">结算报告总额</p>
                             <p className="text-lg font-semibold tabular-nums">${reconciliation.settlementTotal.toFixed(2)}</p>
                           </div>
                           <div>
-                            <p className="text-xs text-muted-foreground">本次计算净收入</p>
+                            <p className="text-xs text-[#6E6E73]">本次计算净收入</p>
                             <p className="text-lg font-semibold tabular-nums">${reconciliation.totalNetIncome.toFixed(2)}</p>
                           </div>
                           <div>
-                            <p className="text-xs text-muted-foreground">差异</p>
+                            <p className="text-xs text-[#6E6E73]">差异</p>
                             <p className={`text-lg font-semibold tabular-nums ${
                               reconciliation.settlementDiff !== undefined && Math.abs(reconciliation.settlementDiff) < 0.01
-                                ? 'text-emerald-500' : 'text-amber-500'
+                                ? 'text-[#34C759]' : 'text-[#FF9500]'
                             }`}>
                               ${reconciliation.settlementDiff?.toFixed(2)}
                             </p>
@@ -1285,25 +1285,25 @@ export default function ImportPage() {
                       </div>
                     )}
 
-                    <div className="border border-border/50 rounded-lg p-4">
+                    <div className="border border-[#E5E5EA]/50 rounded-lg p-4">
                       <h3 className="text-sm font-medium mb-3">共享费用明细</h3>
                       <table className="w-full text-sm">
                         <thead>
-                          <tr className="border-b border-border/50 bg-muted/50">
-                            <th className="text-left py-2 text-xs uppercase tracking-wider text-muted-foreground font-medium">费用类别</th>
-                            <th className="text-right py-2 text-xs uppercase tracking-wider text-muted-foreground font-medium">金额</th>
-                            <th className="text-left py-2 text-xs uppercase tracking-wider text-muted-foreground font-medium">描述</th>
-                            <th className="text-left py-2 text-xs uppercase tracking-wider text-muted-foreground font-medium">数据来源</th>
+                          <tr className="border-b border-[#E5E5EA]/50 bg-[#F5F5F7]">
+                            <th className="text-left py-2 text-xs uppercase tracking-wider text-[#6E6E73] font-medium">费用类别</th>
+                            <th className="text-right py-2 text-xs uppercase tracking-wider text-[#6E6E73] font-medium">金额</th>
+                            <th className="text-left py-2 text-xs uppercase tracking-wider text-[#6E6E73] font-medium">描述</th>
+                            <th className="text-left py-2 text-xs uppercase tracking-wider text-[#6E6E73] font-medium">数据来源</th>
                           </tr>
                         </thead>
                         <tbody>
                           {mergedSharedFees.map((fee, i) => (
-                            <tr key={i} className="border-b border-border/50 hover:bg-muted/20">
+                            <tr key={i} className="border-b border-[#E5E5EA]/50 hover:bg-[#F5F5F7]">
                               <td className="py-2">{fee.category}</td>
                               <td className="py-2 text-right tabular-nums">${fee.totalAmount.toFixed(2)}</td>
-                              <td className="py-2 text-muted-foreground">{fee.description}</td>
+                              <td className="py-2 text-[#6E6E73]">{fee.description}</td>
                               <td className="py-2">
-                                <Badge variant="outline" className="text-[10px] border-border/50">
+                                <Badge variant="outline" className="text-[10px] border-[#E5E5EA]/50">
                                   {fee.source || 'transaction'}
                                 </Badge>
                               </td>
@@ -1314,7 +1314,7 @@ export default function ImportPage() {
                     </div>
                   </div>
                 ) : (
-                  <div className="text-center py-8 text-muted-foreground">
+                  <div className="text-center py-8 text-[#6E6E73]">
                     请先生成利润表
                   </div>
                 )}

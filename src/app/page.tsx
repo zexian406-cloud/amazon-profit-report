@@ -200,21 +200,21 @@ export default function DashboardPage() {
     return (
       <div className="space-y-6">
         <Skeleton className="h-8 w-48" />
-        <div className="grid gap-4 md:grid-cols-4">
-          {[1, 2, 3, 4].map(i => <Skeleton key={i} className="h-32 rounded-xl" />)}
+        <div className="grid gap-5 md:grid-cols-4">
+          {[1, 2, 3, 4].map(i => <Skeleton key={i} className="h-28 rounded-2xl" />)}
         </div>
-        <Skeleton className="h-80 rounded-xl" />
+        <Skeleton className="h-80 rounded-2xl" />
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       {/* Page Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight">总览看板</h1>
-          <p className="text-sm text-muted-foreground/70 mt-1">多店铺利润数据汇总与分析</p>
+          <h1 className="text-3xl font-semibold tracking-tight text-[#1D1D1F]">概览</h1>
+          <p className="text-sm text-[#6E6E73] mt-1">多店铺利润数据汇总</p>
         </div>
         <div className="flex items-center gap-3">
           <ShopFilter
@@ -222,7 +222,7 @@ export default function DashboardPage() {
             onChange={setStoreFilter}
           />
           <Select value={displayCurrency} onValueChange={setDisplayCurrency}>
-            <SelectTrigger className="w-28 h-9 rounded-lg border-border/50">
+            <SelectTrigger className="w-28 h-9 rounded-xl border-border/50 bg-white">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -234,87 +234,71 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* KPI Cards */}
-      <div className="grid gap-4 md:grid-cols-4">
-        <Card className="shadow-sm border-0 hover:shadow-md transition-shadow duration-200">
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">总销售额</CardTitle>
-            <div className="h-8 w-8 rounded-lg bg-emerald-50 flex items-center justify-center">
-              <DollarSign className="h-4 w-4 text-emerald-500" />
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold tabular-nums">
+      {/* Apple-style KPI Cards - large numbers, minimal labels */}
+      <div className="grid gap-5 md:grid-cols-4">
+        <Card className="border-0 rounded-2xl apple-card">
+          <CardContent className="p-6">
+            <p className="text-xs font-medium text-[#6E6E73] uppercase tracking-wider mb-2">总销售额</p>
+            <p className="text-3xl font-semibold tabular-nums text-[#1D1D1F]">
               {currencySymbol}{convert(kpis.totalSales, 'USD').toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-            </div>
-            <p className="text-xs text-muted-foreground/60 mt-1">全部店铺汇总</p>
+            </p>
+            <p className="text-xs text-[#6E6E73]/60 mt-2">全部店铺汇总</p>
           </CardContent>
         </Card>
 
-        <Card className="shadow-sm border-0 hover:shadow-md transition-shadow duration-200">
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">净收入</CardTitle>
-            <div className="h-8 w-8 rounded-lg bg-emerald-50 flex items-center justify-center">
-              <TrendingUp className="h-4 w-4 text-emerald-500" />
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className={`text-2xl font-bold tabular-nums flex items-center gap-2 ${kpis.totalNetIncome >= 0 ? 'text-emerald-500' : 'text-red-500'}`}>
+        <Card className="border-0 rounded-2xl apple-card">
+          <CardContent className="p-6">
+            <p className="text-xs font-medium text-[#6E6E73] uppercase tracking-wider mb-2">净收入</p>
+            <p className={`text-3xl font-semibold tabular-nums ${kpis.totalNetIncome >= 0 ? 'text-[#34C759]' : 'text-[#FF3B30]'}`}>
               {currencySymbol}{convert(kpis.totalNetIncome, 'USD').toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-              {kpis.totalNetIncome >= 0
-                ? <ArrowUpRight className="h-5 w-5" />
-                : <ArrowDownRight className="h-5 w-5" />
-              }
-            </div>
-            <p className="text-xs text-muted-foreground/60 mt-1">总收入 - 总费用</p>
+            </p>
+            <p className="text-xs text-[#6E6E73]/60 mt-2 flex items-center gap-1">
+              {kpis.totalNetIncome >= 0 ? (
+                <><ArrowUpRight className="h-3 w-3 text-[#34C759]" /> 盈利</>
+              ) : (
+                <><ArrowDownRight className="h-3 w-3 text-[#FF3B30]" /> 亏损</>
+              )}
+            </p>
           </CardContent>
         </Card>
 
-        <Card className="shadow-sm border-0 hover:shadow-md transition-shadow duration-200">
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">平均利润率</CardTitle>
-            <div className="h-8 w-8 rounded-lg bg-emerald-50 flex items-center justify-center">
-              <Percent className="h-4 w-4 text-emerald-500" />
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className={`text-2xl font-bold tabular-nums ${kpis.avgProfitRate >= 0 ? 'text-emerald-500' : 'text-red-500'}`}>
+        <Card className="border-0 rounded-2xl apple-card">
+          <CardContent className="p-6">
+            <p className="text-xs font-medium text-[#6E6E73] uppercase tracking-wider mb-2">平均利润率</p>
+            <p className={`text-3xl font-semibold tabular-nums ${kpis.avgProfitRate >= 0 ? 'text-[#34C759]' : 'text-[#FF3B30]'}`}>
               {kpis.avgProfitRate.toFixed(1)}%
-            </div>
-            <p className="text-xs text-muted-foreground/60 mt-1">加权平均</p>
+            </p>
+            <p className="text-xs text-[#6E6E73]/60 mt-2">加权平均</p>
           </CardContent>
         </Card>
 
-        <Card className="shadow-sm border-0 hover:shadow-md transition-shadow duration-200">
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">SKU总数</CardTitle>
-            <div className="h-8 w-8 rounded-lg bg-amber-50 flex items-center justify-center">
-              <Package className="h-4 w-4 text-amber-500" />
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold tabular-nums">{kpis.totalSkuCount}</div>
-            <p className="text-xs text-muted-foreground/60 mt-1">全部店铺</p>
+        <Card className="border-0 rounded-2xl apple-card">
+          <CardContent className="p-6">
+            <p className="text-xs font-medium text-[#6E6E73] uppercase tracking-wider mb-2">SKU 总数</p>
+            <p className="text-3xl font-semibold tabular-nums text-[#1D1D1F]">
+              {kpis.totalSkuCount}
+            </p>
+            <p className="text-xs text-[#6E6E73]/60 mt-2">全部店铺</p>
           </CardContent>
         </Card>
       </div>
 
       {/* Sales Trend Chart */}
-      <Card className="shadow-sm border-0">
-        <CardHeader>
-          <CardTitle className="text-base font-medium">销售额趋势</CardTitle>
+      <Card className="border-0 rounded-2xl apple-card">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base font-medium text-[#1D1D1F]">销售额趋势</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="h-[350px]">
             <ResponsiveContainer width="100%" height="100%">
               {storeFilter === ALL_STORES && storeNames.length > 1 ? (
                 <LineChart data={multiStoreTrendData}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                  <XAxis dataKey="month" tick={{ fontSize: 12 }} />
-                  <YAxis tick={{ fontSize: 12 }} />
+                  <CartesianGrid strokeDasharray="3 3" stroke="#E5E5EA" />
+                  <XAxis dataKey="month" tick={{ fontSize: 12, fill: '#6E6E73' }} />
+                  <YAxis tick={{ fontSize: 12, fill: '#6E6E73' }} />
                   <Tooltip
                     formatter={(value: number) => [`${currencySymbol}${value.toLocaleString()}`, '']}
-                    contentStyle={{ borderRadius: 8, border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
+                    contentStyle={{ borderRadius: 12, border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
                   />
                   <Legend />
                   {storeNames.map((store, i) => (
@@ -331,15 +315,15 @@ export default function DashboardPage() {
                 </LineChart>
               ) : (
                 <LineChart data={trendData}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                  <XAxis dataKey="month" tick={{ fontSize: 12 }} />
-                  <YAxis tick={{ fontSize: 12 }} />
+                  <CartesianGrid strokeDasharray="3 3" stroke="#E5E5EA" />
+                  <XAxis dataKey="month" tick={{ fontSize: 12, fill: '#6E6E73' }} />
+                  <YAxis tick={{ fontSize: 12, fill: '#6E6E73' }} />
                   <Tooltip
                     formatter={(value: number) => [`${currencySymbol}${value.toLocaleString()}`, '销售额']}
-                    contentStyle={{ borderRadius: 8, border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
+                    contentStyle={{ borderRadius: 12, border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
                   />
                   <Legend />
-                  <Line type="monotone" dataKey="totalSales" name="销售额" stroke="var(--color-primary)" strokeWidth={2} dot={{ r: 3 }} />
+                  <Line type="monotone" dataKey="totalSales" name="销售额" stroke="#007AFF" strokeWidth={2} dot={{ r: 3 }} />
                 </LineChart>
               )}
             </ResponsiveContainer>
@@ -348,22 +332,22 @@ export default function DashboardPage() {
       </Card>
 
       {/* Profit Rate & Net Income */}
-      <div className="grid gap-4 md:grid-cols-2">
-        <Card className="shadow-sm border-0">
-          <CardHeader>
-            <CardTitle className="text-base font-medium">净收入趋势</CardTitle>
+      <div className="grid gap-5 md:grid-cols-2">
+        <Card className="border-0 rounded-2xl apple-card">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base font-medium text-[#1D1D1F]">净收入趋势</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="h-[300px]">
               <ResponsiveContainer width="100%" height="100%">
                 {storeFilter === ALL_STORES && storeNames.length > 1 ? (
                   <LineChart data={multiStoreTrendData}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                    <XAxis dataKey="month" tick={{ fontSize: 12 }} />
-                    <YAxis tick={{ fontSize: 12 }} />
+                    <CartesianGrid strokeDasharray="3 3" stroke="#E5E5EA" />
+                    <XAxis dataKey="month" tick={{ fontSize: 12, fill: '#6E6E73' }} />
+                    <YAxis tick={{ fontSize: 12, fill: '#6E6E73' }} />
                     <Tooltip
                       formatter={(value: number) => [`${currencySymbol}${value.toLocaleString()}`, '']}
-                      contentStyle={{ borderRadius: 8, border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
+                      contentStyle={{ borderRadius: 12, border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
                     />
                     <Legend />
                     {storeNames.map((store, i) => (
@@ -380,15 +364,15 @@ export default function DashboardPage() {
                   </LineChart>
                 ) : (
                   <BarChart data={trendData}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                    <XAxis dataKey="month" tick={{ fontSize: 12 }} />
-                    <YAxis tick={{ fontSize: 12 }} />
+                    <CartesianGrid strokeDasharray="3 3" stroke="#E5E5EA" />
+                    <XAxis dataKey="month" tick={{ fontSize: 12, fill: '#6E6E73' }} />
+                    <YAxis tick={{ fontSize: 12, fill: '#6E6E73' }} />
                     <Tooltip
                       formatter={(value: number) => [`${currencySymbol}${value.toLocaleString()}`, '净收入']}
-                      contentStyle={{ borderRadius: 8, border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
+                      contentStyle={{ borderRadius: 12, border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
                     />
                     <Legend />
-                    <Bar dataKey="netIncome" name="净收入" fill="var(--color-primary)" radius={[6, 6, 0, 0]} />
+                    <Bar dataKey="netIncome" name="净收入" fill="#007AFF" radius={[6, 6, 0, 0]} />
                   </BarChart>
                 )}
               </ResponsiveContainer>
@@ -396,23 +380,23 @@ export default function DashboardPage() {
           </CardContent>
         </Card>
 
-        <Card className="shadow-sm border-0">
-          <CardHeader>
-            <CardTitle className="text-base font-medium">利润率变化</CardTitle>
+        <Card className="border-0 rounded-2xl apple-card">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base font-medium text-[#1D1D1F]">利润率变化</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="h-[300px]">
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={trendData}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                  <XAxis dataKey="month" tick={{ fontSize: 12 }} />
-                  <YAxis domain={[0, 100]} tickFormatter={v => `${v}%`} tick={{ fontSize: 12 }} />
+                  <CartesianGrid strokeDasharray="3 3" stroke="#E5E5EA" />
+                  <XAxis dataKey="month" tick={{ fontSize: 12, fill: '#6E6E73' }} />
+                  <YAxis domain={[0, 100]} tickFormatter={v => `${v}%`} tick={{ fontSize: 12, fill: '#6E6E73' }} />
                   <Tooltip
                     formatter={(value: number) => [`${value.toFixed(1)}%`, '利润率']}
-                    contentStyle={{ borderRadius: 8, border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
+                    contentStyle={{ borderRadius: 12, border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
                   />
                   <Legend />
-                  <Line type="monotone" dataKey="profitRate" name="利润率" stroke="var(--color-chart-2)" strokeWidth={2} dot={{ r: 4 }} />
+                  <Line type="monotone" dataKey="profitRate" name="利润率" stroke="#34C759" strokeWidth={2} dot={{ r: 4 }} />
                 </LineChart>
               </ResponsiveContainer>
             </div>
@@ -421,31 +405,31 @@ export default function DashboardPage() {
       </div>
 
       {/* Monthly data table */}
-      <Card className="shadow-sm border-0">
-        <CardHeader>
-          <CardTitle className="text-base font-medium">月度数据概览</CardTitle>
+      <Card className="border-0 rounded-2xl apple-card overflow-hidden">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base font-medium text-[#1D1D1F]">月度数据</CardTitle>
         </CardHeader>
-        <CardContent>
-          <div className="overflow-x-auto rounded-lg border border-border/50">
+        <CardContent className="p-0">
+          <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="bg-muted/50 border-b border-border/50">
-                  <th className="py-3 px-4 text-left font-medium text-muted-foreground text-xs uppercase tracking-wider">月份</th>
-                  <th className="py-3 px-4 text-left font-medium text-muted-foreground text-xs uppercase tracking-wider">店铺</th>
-                  <th className="py-3 px-4 text-right font-medium text-muted-foreground text-xs uppercase tracking-wider">销售额</th>
-                  <th className="py-3 px-4 text-right font-medium text-muted-foreground text-xs uppercase tracking-wider">净收入</th>
-                  <th className="py-3 px-4 text-right font-medium text-muted-foreground text-xs uppercase tracking-wider">利润率</th>
-                  <th className="py-3 px-4 text-right font-medium text-muted-foreground text-xs uppercase tracking-wider">SKU数</th>
+                <tr className="border-b border-[#E5E5EA]">
+                  <th className="py-3 px-6 text-left text-xs font-medium text-[#6E6E73] uppercase tracking-wider">月份</th>
+                  <th className="py-3 px-6 text-left text-xs font-medium text-[#6E6E73] uppercase tracking-wider">店铺</th>
+                  <th className="py-3 px-6 text-right text-xs font-medium text-[#6E6E73] uppercase tracking-wider">销售额</th>
+                  <th className="py-3 px-6 text-right text-xs font-medium text-[#6E6E73] uppercase tracking-wider">净收入</th>
+                  <th className="py-3 px-6 text-right text-xs font-medium text-[#6E6E73] uppercase tracking-wider">利润率</th>
+                  <th className="py-3 px-6 text-right text-xs font-medium text-[#6E6E73] uppercase tracking-wider">SKU数</th>
                 </tr>
               </thead>
               <tbody>
                 {filteredData.slice().sort((a, b) => b.month.localeCompare(a.month)).map((d, i) => {
                   const totals = computeMonthlyTotals(d);
                   return (
-                    <tr key={i} className="border-b border-border/30 hover:bg-muted/20 transition-colors">
-                      <td className="py-3 px-4 font-medium">{d.month}</td>
-                      <td className="py-3 px-4">
-                        <span className="inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-full"
+                    <tr key={i} className="border-b border-[#E5E5EA]/50 hover:bg-[#F5F5F7] transition-colors">
+                      <td className="py-3.5 px-6 text-sm text-[#1D1D1F]">{d.month}</td>
+                      <td className="py-3.5 px-6">
+                        <span className="inline-flex items-center gap-1.5 text-xs font-medium px-3 py-1 rounded-full"
                           style={{
                             backgroundColor: `${getShopColor(d.storeName)}15`,
                             color: getShopColor(d.storeName),
@@ -454,26 +438,26 @@ export default function DashboardPage() {
                           {d.storeName || '一店'}
                         </span>
                       </td>
-                      <td className="text-right py-3 px-4 tabular-nums">
+                      <td className="text-right py-3.5 px-6 tabular-nums text-sm text-[#1D1D1F]">
                         {currencySymbol}{convert(totals.totalSales, 'USD').toLocaleString('zh-CN', { minimumFractionDigits: 2 })}
                       </td>
-                      <td className="text-right py-3 px-4 tabular-nums">
-                        <span className={totals.totalNetIncome >= 0 ? 'text-emerald-500 font-medium' : 'text-red-500 font-medium'}>
+                      <td className="text-right py-3.5 px-6 tabular-nums text-sm">
+                        <span className={totals.totalNetIncome >= 0 ? 'text-[#34C759] font-medium' : 'text-[#FF3B30] font-medium'}>
                           {currencySymbol}{convert(totals.totalNetIncome, 'USD').toLocaleString('zh-CN', { minimumFractionDigits: 2 })}
                         </span>
                       </td>
-                      <td className="text-right py-3 px-4 tabular-nums">
-                        <span className={totals.profitRate >= 0 ? 'text-emerald-500' : 'text-red-500'}>
+                      <td className="text-right py-3.5 px-6 tabular-nums text-sm">
+                        <span className={totals.profitRate >= 0 ? 'text-[#34C759]' : 'text-[#FF3B30]'}>
                           {totals.profitRate.toFixed(1)}%
                         </span>
                       </td>
-                      <td className="text-right py-3 px-4 tabular-nums">{totals.skuCount}</td>
+                      <td className="text-right py-3.5 px-6 tabular-nums text-sm text-[#1D1D1F]">{totals.skuCount}</td>
                     </tr>
                   );
                 })}
                 {filteredData.length === 0 && (
                   <tr>
-                    <td colSpan={6} className="py-12 text-center text-muted-foreground">
+                    <td colSpan={6} className="py-12 text-center text-sm text-[#6E6E73]">
                       暂无数据，请先在「数据导入」页上传报表
                     </td>
                   </tr>

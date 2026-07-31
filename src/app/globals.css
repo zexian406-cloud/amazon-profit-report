@@ -1,4 +1,4 @@
-@import "https://fonts.googleapis.cn/css2?family=Inter:wght@400;500;600;700&display=swap";
+@import "https://fonts.googleapis.cn/css2?family=Inter:wght@300;400;500;600;700&display=swap";
 @import 'tailwindcss';
 @import 'tw-animate-css';
 
@@ -53,40 +53,40 @@
 }
 
 :root {
-  --radius: 0.75rem;
-  --background: oklch(0.985 0.002 100);
+  --radius: 1rem;
+  --background: oklch(1 0 0);
   --foreground: oklch(0.18 0.005 100);
   --card: oklch(1 0 0);
   --card-foreground: oklch(0.18 0.005 100);
   --popover: oklch(1 0 0);
   --popover-foreground: oklch(0.18 0.005 100);
-  --primary: oklch(0.55 0.12 175);
+  --primary: oklch(0.5 0.15 260);
   --primary-foreground: oklch(0.98 0 0);
-  --secondary: oklch(0.95 0.01 175);
-  --secondary-foreground: oklch(0.35 0.04 175);
-  --muted: oklch(0.95 0.005 100);
+  --secondary: oklch(0.96 0.005 100);
+  --secondary-foreground: oklch(0.35 0.01 100);
+  --muted: oklch(0.96 0.005 100);
   --muted-foreground: oklch(0.55 0.01 100);
-  --accent: oklch(0.95 0.02 175);
-  --accent-foreground: oklch(0.35 0.04 175);
-  --destructive: oklch(0.58 0.2 25);
-  --border: oklch(0.92 0.004 100);
-  --input: oklch(0.92 0.004 100);
-  --ring: oklch(0.55 0.12 175);
-  --chart-1: oklch(0.55 0.12 175);
-  --chart-2: oklch(0.6 0.14 200);
-  --chart-3: oklch(0.65 0.18 150);
-  --chart-4: oklch(0.7 0.16 80);
-  --chart-5: oklch(0.65 0.18 320);
+  --accent: oklch(0.96 0.005 100);
+  --accent-foreground: oklch(0.35 0.01 100);
+  --destructive: oklch(0.55 0.2 25);
+  --border: oklch(0.93 0.005 100);
+  --input: oklch(0.93 0.005 100);
+  --ring: oklch(0.5 0.15 260);
+  --chart-1: oklch(0.5 0.15 260);
+  --chart-2: oklch(0.6 0.15 200);
+  --chart-3: oklch(0.55 0.12 150);
+  --chart-4: oklch(0.65 0.16 80);
+  --chart-5: oklch(0.6 0.18 330);
 
-  /* Dark sidebar */
+  /* Dark sidebar - Apple style */
   --sidebar: oklch(0.18 0.005 100);
   --sidebar-foreground: oklch(0.85 0.005 100);
-  --sidebar-primary: oklch(0.55 0.12 175);
+  --sidebar-primary: oklch(0.5 0.15 260);
   --sidebar-primary-foreground: oklch(0.98 0 0);
   --sidebar-accent: oklch(0.25 0.005 100);
   --sidebar-accent-foreground: oklch(0.95 0.005 100);
   --sidebar-border: oklch(0.25 0.005 100);
-  --sidebar-ring: oklch(0.55 0.12 175);
+  --sidebar-ring: oklch(0.5 0.15 260);
 }
 
 @layer base {
@@ -110,4 +110,13 @@ body {
 /* Smooth sidebar transition */
 .sidebar-transition {
   transition: width 300ms ease-out;
+}
+
+/* Apple-style card shadow */
+.apple-card {
+  box-shadow: 0 1px 3px rgba(0,0,0,0.04), 0 1px 2px rgba(0,0,0,0.06);
+  transition: box-shadow 0.2s ease-out;
+}
+.apple-card:hover {
+  box-shadow: 0 4px 12px rgba(0,0,0,0.08), 0 2px 4px rgba(0,0,0,0.04);
 }

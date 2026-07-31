@@ -112,12 +112,12 @@ export default function SettingsPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">店铺管理</h1>
-          <p className="text-muted-foreground mt-1">管理你的亚马逊店铺，支持自定义添加、重命名和删除</p>
+          <p className="text-[#6E6E73] mt-1">管理你的亚马逊店铺，支持自定义添加、重命名和删除</p>
         </div>
       </div>
 
       {/* 添加新店铺 */}
-      <Card className="shadow-sm border-0">
+      <Card className="border-0 rounded-2xl apple-card">
         <CardHeader>
           <CardTitle className="text-base">添加新店铺</CardTitle>
           <CardDescription>输入店铺名称、选择货币单位和默认负责人</CardDescription>
@@ -147,7 +147,7 @@ export default function SettingsPage() {
               onChange={(e) => setNewShopManager(e.target.value)}
               className="max-w-[180px]"
             />
-            <Button onClick={handleAdd} className="gap-2 bg-emerald-600 hover:bg-emerald-700">
+            <Button onClick={handleAdd} className="gap-2 bg-[#007AFF] hover:bg-[#007AFF]/90">
               <Plus className="h-4 w-4" />
               添加
             </Button>
@@ -156,7 +156,7 @@ export default function SettingsPage() {
       </Card>
 
       {/* 店铺列表 */}
-      <Card className="shadow-sm border-0">
+      <Card className="border-0 rounded-2xl apple-card">
         <CardHeader>
           <CardTitle className="text-base">当前店铺列表</CardTitle>
           <CardDescription>共 {shops.length} 个店铺，可编辑名称、货币单位和默认负责人</CardDescription>
@@ -166,7 +166,7 @@ export default function SettingsPage() {
             {shops.map((shop) => (
               <div
                 key={shop.id}
-                className="p-4 rounded-lg border bg-card hover:bg-muted/50 transition-colors"
+                className="p-4 rounded-lg border bg-card hover:bg-[#F5F5F7]/50 transition-colors"
               >
                 <div className="flex items-center justify-between mb-3">
                   <div className="flex items-center gap-3">
@@ -186,7 +186,7 @@ export default function SettingsPage() {
                             className="h-8 w-40"
                             autoFocus
                           />
-                          <Button size="sm" variant="default" className="bg-emerald-600 hover:bg-emerald-700" onClick={() => handleRename(shop.id)}>确定</Button>
+                          <Button size="sm" variant="default" className="bg-[#007AFF] hover:bg-[#007AFF]/90" onClick={() => handleRename(shop.id)}>确定</Button>
                           <Button size="sm" variant="ghost" onClick={() => { setEditingId(null); setEditingName(''); }}>取消</Button>
                         </div>
                       ) : (
@@ -220,14 +220,14 @@ export default function SettingsPage() {
                             确认删除店铺
                           </DialogTitle>
                         </DialogHeader>
-                        <p className="text-sm text-muted-foreground leading-relaxed">
+                        <p className="text-sm text-[#6E6E73] leading-relaxed">
                           删除「{shop.name}」将同时清除该店铺的所有导入数据。此操作不可撤销，请确认。
                         </p>
                         <DialogFooter className="gap-2">
                           <DialogClose asChild>
-                            <Button variant="outline" className="rounded-lg">取消</Button>
+                            <Button variant="outline" className="rounded-xl">取消</Button>
                           </DialogClose>
-                          <Button variant="destructive" onClick={() => handleDelete(shop.id)} className="rounded-lg">
+                          <Button variant="destructive" onClick={() => handleDelete(shop.id)} className="rounded-xl">
                             确认删除
                           </Button>
                         </DialogFooter>
@@ -239,8 +239,8 @@ export default function SettingsPage() {
                 {/* 货币单位和默认负责人 */}
                 <div className="flex items-center gap-6 pl-[52px]">
                   <div className="flex items-center gap-2">
-                    <DollarSign className="h-4 w-4 text-muted-foreground" />
-                    <span className="text-sm text-muted-foreground">货币：</span>
+                    <DollarSign className="h-4 w-4 text-[#6E6E73]" />
+                    <span className="text-sm text-[#6E6E73]">货币：</span>
                     <Select
                       value={shop.currency || 'USD'}
                       onValueChange={(v) => handleCurrencyChange(shop.id, v)}
@@ -256,8 +256,8 @@ export default function SettingsPage() {
                     </Select>
                   </div>
                   <div className="flex items-center gap-2">
-                    <User className="h-4 w-4 text-muted-foreground" />
-                    <span className="text-sm text-muted-foreground">负责人：</span>
+                    <User className="h-4 w-4 text-[#6E6E73]" />
+                    <span className="text-sm text-[#6E6E73]">负责人：</span>
                     <Input
                       defaultValue={shop.defaultManager || ''}
                       placeholder="默认负责人"
@@ -278,14 +278,14 @@ export default function SettingsPage() {
       </Card>
 
       {/* 海外仓费用类型管理 */}
-      <Card className="shadow-sm border-0">
+      <Card className="border-0 rounded-2xl apple-card">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Package className="h-5 w-5" />
             海外仓费用类型管理
           </CardTitle>
           <CardDescription>
-            管理利润表中的海外仓尾程运费列。默认包含乐歌、京东。新增合作仓库后在此添加，利润表会自动生成对应列。
+            管理利润表中的海外仓尾程运费列。新增合作仓库后在此添加，利润表会自动生成对应列。
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -293,7 +293,7 @@ export default function SettingsPage() {
             {providers.map((provider) => (
               <div key={provider.id} className="flex items-center justify-between rounded-lg border p-3">
                 <div className="flex items-center gap-3">
-                  <Package className="h-4 w-4 text-muted-foreground" />
+                  <Package className="h-4 w-4 text-[#6E6E73]" />
                   {editingProviderId === provider.id ? (
                     <Input
                       value={editingProviderName}
@@ -311,7 +311,7 @@ export default function SettingsPage() {
                 <div className="flex items-center gap-2">
                   {editingProviderId === provider.id ? (
                     <>
-                      <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700" onClick={() => handleRenameProvider(provider.id!)}>保存</Button>
+                      <Button size="sm" className="bg-[#007AFF] hover:bg-[#007AFF]/90" onClick={() => handleRenameProvider(provider.id!)}>保存</Button>
                       <Button size="sm" variant="ghost" onClick={() => setEditingProviderId(null)}>取消</Button>
                     </>
                   ) : (
@@ -345,7 +345,7 @@ export default function SettingsPage() {
                   if (e.key === 'Enter') handleAddProvider();
                 }}
               />
-              <Button onClick={handleAddProvider} size="sm" className="bg-emerald-600 hover:bg-emerald-700">添加</Button>
+              <Button onClick={handleAddProvider} size="sm" className="bg-[#007AFF] hover:bg-[#007AFF]/90">添加</Button>
             </div>
           </div>
         </CardContent>
@@ -362,7 +362,7 @@ export default function SettingsPage() {
           </DialogHeader>
           <DialogFooter className="gap-2">
             <DialogClose asChild>
-              <Button variant="outline" className="rounded-lg">取消</Button>
+              <Button variant="outline" className="rounded-xl">取消</Button>
             </DialogClose>
             <Button
               variant="destructive"
@@ -371,7 +371,7 @@ export default function SettingsPage() {
                   handleDeleteProvider(deleteProviderConfirm!);
                 }
               }}
-              className="rounded-lg"
+              className="rounded-xl"
             >
               确认删除
             </Button>

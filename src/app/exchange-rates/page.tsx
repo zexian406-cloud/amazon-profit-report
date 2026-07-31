@@ -186,7 +186,7 @@ export default function ExchangeRatesPage() {
   if (loading) {
     return (
       <div className="p-6">
-        <div className="text-center py-12 text-muted-foreground">加载中...</div>
+        <div className="text-center py-12 text-[#6E6E73]">加载中...</div>
       </div>
     );
   }
@@ -197,7 +197,7 @@ export default function ExchangeRatesPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold">汇率管理</h1>
-          <p className="text-sm text-muted-foreground mt-1">
+          <p className="text-sm text-[#6E6E73] mt-1">
             默认汇率作为兜底，月度汇率可针对特定月份单独设置
           </p>
         </div>
@@ -207,7 +207,7 @@ export default function ExchangeRatesPage() {
       </div>
 
       {/* ===== 默认汇率 ===== */}
-      <Card className="shadow-sm border-0">
+      <Card className="border-0 rounded-2xl apple-card">
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle className="text-base">默认汇率（兜底）</CardTitle>
           <Dialog open={rateDialogOpen} onOpenChange={(open) => { setRateDialogOpen(open); if (!open) resetRateForm(); }}>
@@ -255,29 +255,29 @@ export default function ExchangeRatesPage() {
         <CardContent>
           {rates.length === 0 ? (
             <div className="text-center py-8">
-              <p className="text-muted-foreground">暂无默认汇率</p>
-              <p className="text-sm text-muted-foreground mt-1">点击上方按钮添加美元→人民币等汇率规则</p>
+              <p className="text-[#6E6E73]">暂无默认汇率</p>
+              <p className="text-sm text-[#6E6E73] mt-1">点击上方按钮添加美元→人民币等汇率规则</p>
             </div>
           ) : (
             <div className="overflow-x-auto">
               <table className="min-w-full divide-y">
                 <thead>
-                  <tr className="bg-muted/50">
-                    <th className="text-xs uppercase tracking-wider text-muted-foreground font-medium px-3 py-3 text-left">源货币</th>
-                    <th className="text-xs uppercase tracking-wider text-muted-foreground font-medium px-3 py-3 text-left"></th>
-                    <th className="text-xs uppercase tracking-wider text-muted-foreground font-medium px-3 py-3 text-left">目标货币</th>
-                    <th className="text-xs uppercase tracking-wider text-muted-foreground font-medium px-3 py-3 text-left">汇率值</th>
-                    <th className="text-xs uppercase tracking-wider text-muted-foreground font-medium px-3 py-3 text-right">操作</th>
+                  <tr className="bg-[#F5F5F7]">
+                    <th className="text-xs uppercase tracking-wider text-[#6E6E73] font-medium px-3 py-3 text-left">源货币</th>
+                    <th className="text-xs uppercase tracking-wider text-[#6E6E73] font-medium px-3 py-3 text-left"></th>
+                    <th className="text-xs uppercase tracking-wider text-[#6E6E73] font-medium px-3 py-3 text-left">目标货币</th>
+                    <th className="text-xs uppercase tracking-wider text-[#6E6E73] font-medium px-3 py-3 text-left">汇率值</th>
+                    <th className="text-xs uppercase tracking-wider text-[#6E6E73] font-medium px-3 py-3 text-right">操作</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y">
                   {rates.map((rate) => (
-                    <tr key={rate.id} className="hover:bg-muted/20 transition-colors">
+                    <tr key={rate.id} className="hover:bg-[#F5F5F7]/50 transition-colors">
                       <td className="px-3 py-3">
                         <span className="font-mono font-medium">{rate.fromCurrency}</span>
                       </td>
                       <td className="px-3 py-3">
-                        <span className="text-muted-foreground">→</span>
+                        <span className="text-[#6E6E73]">→</span>
                       </td>
                       <td className="px-3 py-3">
                         <span className="font-mono font-medium">{rate.toCurrency}</span>
@@ -288,7 +288,7 @@ export default function ExchangeRatesPage() {
                       <td className="px-3 py-3 text-right">
                         <div className="flex items-center justify-end gap-1">
                           <Button variant="ghost" size="sm" onClick={() => handleEditRate(rate)}><Pencil className="h-4 w-4" /></Button>
-                          <Button variant="ghost" size="sm" onClick={() => handleDeleteRate(rate.id!)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
+                          <Button variant="ghost" size="sm" onClick={() => handleDeleteRate(rate.id!)}><Trash2 className="h-4 w-4 text-[#FF3B30]" /></Button>
                         </div>
                       </td>
                     </tr>
@@ -301,7 +301,7 @@ export default function ExchangeRatesPage() {
       </Card>
 
       {/* ===== 月度汇率 ===== */}
-      <Card className="shadow-sm border-0">
+      <Card className="border-0 rounded-2xl apple-card">
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle className="text-base">月度汇率（按月份覆盖）</CardTitle>
           <Dialog open={overrideDialogOpen} onOpenChange={(open) => { setOverrideDialogOpen(open); if (!open) resetOverrideForm(); }}>
@@ -360,33 +360,33 @@ export default function ExchangeRatesPage() {
         <CardContent>
           {overrides.length === 0 ? (
             <div className="text-center py-8">
-              <p className="text-muted-foreground">暂无月度汇率</p>
-              <p className="text-sm text-muted-foreground mt-1">点击上方按钮为特定月份设置汇率</p>
+              <p className="text-[#6E6E73]">暂无月度汇率</p>
+              <p className="text-sm text-[#6E6E73] mt-1">点击上方按钮为特定月份设置汇率</p>
             </div>
           ) : (
             <div className="overflow-x-auto">
               <table className="min-w-full divide-y">
                 <thead>
-                  <tr className="bg-muted/50">
-                    <th className="text-xs uppercase tracking-wider text-muted-foreground font-medium px-3 py-3 text-left">月份</th>
-                    <th className="text-xs uppercase tracking-wider text-muted-foreground font-medium px-3 py-3 text-left">源货币</th>
-                    <th className="text-xs uppercase tracking-wider text-muted-foreground font-medium px-3 py-3 text-left"></th>
-                    <th className="text-xs uppercase tracking-wider text-muted-foreground font-medium px-3 py-3 text-left">目标货币</th>
-                    <th className="text-xs uppercase tracking-wider text-muted-foreground font-medium px-3 py-3 text-left">汇率值</th>
-                    <th className="text-xs uppercase tracking-wider text-muted-foreground font-medium px-3 py-3 text-right">操作</th>
+                  <tr className="bg-[#F5F5F7]">
+                    <th className="text-xs uppercase tracking-wider text-[#6E6E73] font-medium px-3 py-3 text-left">月份</th>
+                    <th className="text-xs uppercase tracking-wider text-[#6E6E73] font-medium px-3 py-3 text-left">源货币</th>
+                    <th className="text-xs uppercase tracking-wider text-[#6E6E73] font-medium px-3 py-3 text-left"></th>
+                    <th className="text-xs uppercase tracking-wider text-[#6E6E73] font-medium px-3 py-3 text-left">目标货币</th>
+                    <th className="text-xs uppercase tracking-wider text-[#6E6E73] font-medium px-3 py-3 text-left">汇率值</th>
+                    <th className="text-xs uppercase tracking-wider text-[#6E6E73] font-medium px-3 py-3 text-right">操作</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y">
                   {overrides.map((ov) => (
-                    <tr key={ov.id} className="hover:bg-muted/20 transition-colors">
+                    <tr key={ov.id} className="hover:bg-[#F5F5F7]/50 transition-colors">
                       <td className="px-3 py-3">
-                        <span className="text-xs font-medium bg-primary/10 text-primary px-2 py-0.5 rounded">{ov.month}</span>
+                        <span className="text-xs font-medium bg-[#007AFF]/10 text-[#007AFF] px-2 py-0.5 rounded">{ov.month}</span>
                       </td>
                       <td className="px-3 py-3">
                         <span className="font-mono font-medium">{ov.fromCurrency}</span>
                       </td>
                       <td className="px-3 py-3">
-                        <span className="text-muted-foreground">→</span>
+                        <span className="text-[#6E6E73]">→</span>
                       </td>
                       <td className="px-3 py-3">
                         <span className="font-mono font-medium">{ov.toCurrency}</span>
@@ -397,7 +397,7 @@ export default function ExchangeRatesPage() {
                       <td className="px-3 py-3 text-right">
                         <div className="flex items-center justify-end gap-1">
                           <Button variant="ghost" size="sm" onClick={() => handleEditOverride(ov)}><Pencil className="h-4 w-4" /></Button>
-                          <Button variant="ghost" size="sm" onClick={() => handleDeleteOverride(ov.id!)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
+                          <Button variant="ghost" size="sm" onClick={() => handleDeleteOverride(ov.id!)}><Trash2 className="h-4 w-4 text-[#FF3B30]" /></Button>
                         </div>
                       </td>
                     </tr>
@@ -410,7 +410,7 @@ export default function ExchangeRatesPage() {
       </Card>
 
       {toastMsg && (
-        <div className="fixed bottom-4 right-4 z-50 bg-popover border rounded-lg px-4 py-3 shadow-lg text-sm">
+        <div className="fixed bottom-4 right-4 z-50 bg-popover border border-[#E5E5EA] rounded-lg px-4 py-3 shadow-lg text-sm">
           {toastMsg}
         </div>
       )}

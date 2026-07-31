@@ -135,31 +135,31 @@ export default function HelpPage() {
   return (
     <div className="p-6 max-w-4xl mx-auto">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-emerald-700">使用说明</h1>
-        <p className="text-muted-foreground mt-2">亚马逊利润报表系统快速参考</p>
+        <h1 className="text-3xl font-bold text-[#007AFF]">使用说明</h1>
+        <p className="text-[#6E6E73] mt-2">亚马逊利润报表系统快速参考</p>
       </div>
 
       <div className="space-y-5">
         {sections.map((section, i) => (
-          <Card key={i} className="shadow-sm border-0 bg-card rounded-xl">
+          <Card key={i} className="border-0 rounded-2xl apple-card bg-card">
             <CardHeader className="pb-2">
               <CardTitle className="flex items-center gap-2 text-lg">
-                <section.icon className="w-5 h-5 text-emerald-600" />
+                <section.icon className="w-5 h-5 text-[#007AFF]" />
                 {section.title}
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
               {section.content && (
-                <p className="text-sm text-muted-foreground whitespace-pre-line leading-relaxed">
+                <p className="text-sm text-[#6E6E73] whitespace-pre-line leading-relaxed">
                   {section.content}
                 </p>
               )}
               {section.items?.map((item, j) => (
                 <div key={j}>
-                  <h4 className="font-medium text-sm text-emerald-700 mb-1">
+                  <h4 className="font-medium text-sm text-[#007AFF] mb-1">
                     ▸ {item.sub}
                   </h4>
-                  <p className="text-sm text-muted-foreground whitespace-pre-line leading-relaxed pl-4">
+                  <p className="text-sm text-[#6E6E73] whitespace-pre-line leading-relaxed pl-4">
                     {item.detail}
                   </p>
                 </div>

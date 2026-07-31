@@ -91,7 +91,7 @@ export default function HistoryPage() {
   }
 
   if (loading) {
-    return <div className="flex items-center justify-center h-64"><div className="text-muted-foreground">加载中...</div></div>;
+    return <div className="flex items-center justify-center h-64"><div className="text-[#6E6E73]">加载中...</div></div>;
   }
 
   return (
@@ -99,7 +99,7 @@ export default function HistoryPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">历史对比</h1>
-          <p className="text-sm text-muted-foreground mt-1">多月份利润数据对比分析</p>
+          <p className="text-sm text-[#6E6E73] mt-1">多月份利润数据对比分析</p>
         </div>
         <Select value={selectedStore} onValueChange={setSelectedStore}>
           <SelectTrigger className="w-32">
@@ -114,8 +114,8 @@ export default function HistoryPage() {
       </div>
 
       {monthComparisons.length === 0 ? (
-        <Card className="shadow-sm border-0">
-          <CardContent className="text-center py-12 text-muted-foreground">
+        <Card className="border-0 rounded-2xl apple-card">
+          <CardContent className="text-center py-12 text-[#6E6E73]">
             暂无对比数据，请先导入多个月份的数据
           </CardContent>
         </Card>
@@ -123,7 +123,7 @@ export default function HistoryPage() {
         <>
           {/* Charts */}
           <div className="grid gap-4 md:grid-cols-2">
-            <Card className="shadow-sm border-0">
+            <Card className="border-0 rounded-2xl apple-card">
               <CardHeader>
                 <CardTitle className="text-base">销售额与净收入对比</CardTitle>
               </CardHeader>
@@ -131,20 +131,20 @@ export default function HistoryPage() {
                 <div className="h-80">
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart data={monthComparisons}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" />
+                      <CartesianGrid strokeDasharray="3 3" stroke="#E5E5EA" />
                       <XAxis dataKey="month" tick={{ fontSize: 12 }} />
                       <YAxis tick={{ fontSize: 12 }} />
                       <Tooltip formatter={(value: number) => [`$${value.toFixed(2)}`, '']} contentStyle={{ borderRadius: 8, border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }} />
                       <Legend />
-                      <Bar dataKey="sales" name="销售额" fill="var(--color-primary)" radius={[4, 4, 0, 0]} />
-                      <Bar dataKey="income" name="净收入" fill="var(--color-chart-2)" radius={[4, 4, 0, 0]} />
+                      <Bar dataKey="sales" name="销售额" fill="#007AFF" radius={[4, 4, 0, 0]} />
+                      <Bar dataKey="income" name="净收入" fill="#34C759" radius={[4, 4, 0, 0]} />
                     </BarChart>
                   </ResponsiveContainer>
                 </div>
               </CardContent>
             </Card>
 
-            <Card className="shadow-sm border-0">
+            <Card className="border-0 rounded-2xl apple-card">
               <CardHeader>
                 <CardTitle className="text-base">利润率变化趋势</CardTitle>
               </CardHeader>
@@ -152,7 +152,7 @@ export default function HistoryPage() {
                 <div className="h-80">
                   <ResponsiveContainer width="100%" height="100%">
                     <LineChart data={monthComparisons}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" />
+                      <CartesianGrid strokeDasharray="3 3" stroke="#E5E5EA" />
                       <XAxis dataKey="month" tick={{ fontSize: 12 }} />
                       <YAxis tick={{ fontSize: 12 }} unit="%" />
                       <Tooltip formatter={(value: number) => [`${value.toFixed(1)}%`, '利润率']} contentStyle={{ borderRadius: 8, border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }} />
@@ -161,9 +161,9 @@ export default function HistoryPage() {
                         type="monotone"
                         dataKey="margin"
                         name="利润率"
-                        stroke="var(--color-chart-3)"
+                        stroke="#FF9500"
                         strokeWidth={2}
-                        dot={{ fill: 'var(--color-chart-3)', r: 4 }}
+                        dot={{ fill: '#FF9500', r: 4 }}
                       />
                     </LineChart>
                   </ResponsiveContainer>
@@ -173,7 +173,7 @@ export default function HistoryPage() {
           </div>
 
           {/* Comparison Table */}
-          <Card className="shadow-sm border-0">
+          <Card className="border-0 rounded-2xl apple-card">
             <CardHeader>
               <CardTitle className="text-base">逐月对比明细</CardTitle>
             </CardHeader>
@@ -182,13 +182,13 @@ export default function HistoryPage() {
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b border-border/50">
-                      <th className="text-left py-3 px-2 font-medium text-muted-foreground">月份</th>
-                      <th className="text-right py-3 px-2 font-medium text-muted-foreground">订单数</th>
-                      <th className="text-right py-3 px-2 font-medium text-muted-foreground">SKU数</th>
-                      <th className="text-right py-3 px-2 font-medium text-muted-foreground">销售额</th>
-                      <th className="text-right py-3 px-2 font-medium text-muted-foreground">净收入</th>
-                      <th className="text-right py-3 px-2 font-medium text-muted-foreground">利润率</th>
-                      <th className="text-right py-3 px-2 font-medium text-muted-foreground">环比变化</th>
+                      <th className="text-left py-3 px-2 font-medium text-[#6E6E73]">月份</th>
+                      <th className="text-right py-3 px-2 font-medium text-[#6E6E73]">订单数</th>
+                      <th className="text-right py-3 px-2 font-medium text-[#6E6E73]">SKU数</th>
+                      <th className="text-right py-3 px-2 font-medium text-[#6E6E73]">销售额</th>
+                      <th className="text-right py-3 px-2 font-medium text-[#6E6E73]">净收入</th>
+                      <th className="text-right py-3 px-2 font-medium text-[#6E6E73]">利润率</th>
+                      <th className="text-right py-3 px-2 font-medium text-[#6E6E73]">环比变化</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -201,13 +201,13 @@ export default function HistoryPage() {
                           <td className="py-3 px-2 text-right">{m.orderCount}</td>
                           <td className="py-3 px-2 text-right">{m.skuCount}</td>
                           <td className="py-3 px-2 text-right">{m.sales.toFixed(2)}</td>
-                          <td className={`py-3 px-2 text-right font-semibold tabular-nums ${m.income >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'}`}>
+                          <td className={`py-3 px-2 text-right font-semibold tabular-nums ${m.income >= 0 ? 'text-[#34C759]' : 'text-[#FF3B30]'}`}>
                             {m.income.toFixed(2)}
                           </td>
                           <td className="py-3 px-2 text-right tabular-nums">{m.margin.toFixed(1)}%</td>
                           <td className="py-3 px-2 text-right">
                             {prev ? (
-                              <span className={`flex items-center justify-end gap-1 text-xs ${change >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'}`}>
+                              <span className={`flex items-center justify-end gap-1 text-xs ${change >= 0 ? 'text-[#34C759]' : 'text-[#FF3B30]'}`}>
                                 {change >= 0 ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
                                 {Math.abs(change).toFixed(1)}%
                               </span>

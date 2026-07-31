@@ -11,7 +11,7 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid,
 } from 'recharts';
 
-const COLORS = ['var(--color-chart-1)', 'var(--color-chart-2)', 'var(--color-chart-3)', 'var(--color-chart-4)', 'var(--color-chart-5)', 'var(--color-primary)', 'var(--color-secondary)', 'var(--color-accent)'];
+const COLORS = ['#007AFF', '#34C759', '#FF9500', '#FF3B30', '#5856D6', '#AF52DE', '#FF6482', '#00C7BE'];
 
 export default function FeesPage() {
   const [monthlyDataList, setMonthlyDataList] = useState<MonthlyData[]>([]);
@@ -104,7 +104,7 @@ export default function FeesPage() {
   ].filter(f => f.value > 0);
 
   if (loading) {
-    return <div className="flex items-center justify-center h-64"><div className="text-muted-foreground">加载中...</div></div>;
+    return <div className="flex items-center justify-center h-64"><div className="text-[#6E6E73]">加载中...</div></div>;
   }
 
   return (
@@ -112,7 +112,7 @@ export default function FeesPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">费用分析</h1>
-          <p className="text-sm text-muted-foreground mt-1">费用结构拆解与明细分析</p>
+          <p className="text-sm text-[#6E6E73] mt-1">费用结构拆解与明细分析</p>
         </div>
         <div className="flex gap-2">
           <Select value={selectedMonth} onValueChange={setSelectedMonth}>
@@ -139,8 +139,8 @@ export default function FeesPage() {
       </div>
 
       {skuRows.length === 0 ? (
-        <Card className="shadow-sm border-0">
-          <CardContent className="text-center py-12 text-muted-foreground">
+        <Card className="border-0 rounded-2xl apple-card">
+          <CardContent className="text-center py-12 text-[#6E6E73]">
             暂无数据，请先导入数据
           </CardContent>
         </Card>
@@ -148,7 +148,7 @@ export default function FeesPage() {
         <>
           {/* KPI Cards */}
           <div className="grid gap-4 md:grid-cols-4">
-            <Card className="shadow-sm border-0">
+            <Card className="border-0 rounded-2xl apple-card">
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm font-medium">总费用</CardTitle>
               </CardHeader>
@@ -156,7 +156,7 @@ export default function FeesPage() {
                 <div className="text-2xl font-bold">${totalFee.toFixed(2)}</div>
               </CardContent>
             </Card>
-            <Card className="shadow-sm border-0">
+            <Card className="border-0 rounded-2xl apple-card">
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm font-medium">最大费用项</CardTitle>
               </CardHeader>
@@ -166,7 +166,7 @@ export default function FeesPage() {
                 </div>
               </CardContent>
             </Card>
-            <Card className="shadow-sm border-0">
+            <Card className="border-0 rounded-2xl apple-card">
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm font-medium">费用占比</CardTitle>
               </CardHeader>
@@ -178,7 +178,7 @@ export default function FeesPage() {
                 </div>
               </CardContent>
             </Card>
-            <Card className="shadow-sm border-0">
+            <Card className="border-0 rounded-2xl apple-card">
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm font-medium">共享费用项</CardTitle>
               </CardHeader>
@@ -190,7 +190,7 @@ export default function FeesPage() {
 
           <div className="grid gap-4 md:grid-cols-2">
             {/* 费用结构饼图 */}
-            <Card className="shadow-sm border-0">
+            <Card className="border-0 rounded-2xl apple-card">
               <CardHeader>
                 <CardTitle className="text-base">费用结构分布</CardTitle>
               </CardHeader>
@@ -219,7 +219,7 @@ export default function FeesPage() {
             </Card>
 
             {/* 费用对比柱状图 */}
-            <Card className="shadow-sm border-0">
+            <Card className="border-0 rounded-2xl apple-card">
               <CardHeader>
                 <CardTitle className="text-base">各项费用明细</CardTitle>
               </CardHeader>
@@ -227,7 +227,7 @@ export default function FeesPage() {
                 <div className="h-80">
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart data={feeStructure} layout="vertical">
-                      <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                      <CartesianGrid strokeDasharray="3 3" stroke="#E5E5EA" />
                       <XAxis type="number" tick={{ fontSize: 12 }} />
                       <YAxis dataKey="name" type="category" tick={{ fontSize: 12 }} width={80} />
                       <Tooltip formatter={(value: number) => [`$${value.toFixed(2)}`, '金额']} />
@@ -244,7 +244,7 @@ export default function FeesPage() {
           </div>
 
           {/* 共享费用明细 */}
-          <Card className="shadow-sm border-0">
+          <Card className="border-0 rounded-2xl apple-card">
             <CardHeader>
               <CardTitle className="text-base">共享费用明细</CardTitle>
             </CardHeader>
@@ -261,21 +261,21 @@ export default function FeesPage() {
                     </thead>
                     <tbody>
                       {sharedFees.map((fee, i) => (
-                        <tr key={i} className="border-b hover:bg-muted/50">
+                        <tr key={i} className="border-b hover:bg-[#F5F5F7]">
                           <td className="py-3 px-2">
-                            <span className="inline-block px-2 py-0.5 rounded text-xs font-medium bg-muted">
+                            <span className="inline-block px-2 py-0.5 rounded text-xs font-medium bg-[#F5F5F7]">
                               {fee.category}
                             </span>
                           </td>
                           <td className="py-3 px-2 text-right font-medium">${fee.totalAmount.toFixed(2)}</td>
-                          <td className="py-3 px-2 text-muted-foreground">{fee.description}</td>
+                          <td className="py-3 px-2 text-[#6E6E73]">{fee.description}</td>
                         </tr>
                       ))}
                     </tbody>
                   </table>
                 </div>
               ) : (
-                <div className="text-center py-8 text-muted-foreground">暂无共享费用数据</div>
+                <div className="text-center py-8 text-[#6E6E73]">暂无共享费用数据</div>
               )}
             </CardContent>
           </Card>

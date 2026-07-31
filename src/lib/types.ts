@@ -248,7 +248,7 @@ export interface DeliveryFeeItem {
   orderId: string;
   deliveryFee: number;
   carrier: string;
-  provider: string;         // 海外仓名称（乐歌/京东/万邑通等）
+  provider: string;         // 海外仓名称
   shippingMethod: string;
   destination: string;
   deliveryDate: string;
