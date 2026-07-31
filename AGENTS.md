@@ -15,24 +15,27 @@
 ├── scripts/                # 构建与启动脚本
 ├── src/
 │   ├── app/                # 页面路由与布局
-│   │   ├── page.tsx        # 首页看板
+│   │   ├── page.tsx        # 首页看板（含汇率换算）
 │   │   ├── layout.tsx      # 根布局（含侧边栏）
 │   │   ├── globals.css     # 全局样式
 │   │   ├── import/         # 数据导入页（多报表上传）
-│   │   ├── profit/         # SKU利润表页
+│   │   ├── profit/         # SKU利润表页（含汇率换算）
 │   │   ├── history/        # 历史对比页
-│   │   └── fees/           # 费用分析页
+│   │   ├── fees/           # 费用分析页
+│   │   ├── settings/       # 店铺管理页（货币/负责人）
+│   │   └── exchange-rates/ # 汇率管理页
 │   ├── components/
 │   │   ├── layout/         # 布局组件（侧边栏）
 │   │   └── ui/             # Shadcn UI 组件库
 │   ├── hooks/              # 自定义 Hooks
 │   └── lib/                # 工具库
 │       ├── utils.ts        # 通用工具函数
-│       ├── types.ts        # 类型定义（含多报表类型）
-│       ├── idb.ts          # IndexedDB 操作
-│       ├── excel-parser.ts # 交易明细Excel解析
+│       ├── types.ts        # 类型定义（含多报表类型、ExchangeRate、CURRENCY_OPTIONS）
+│       ├── currency.ts     # 汇率换算工具函数
+│       ├── idb.ts          # IndexedDB 操作（含 shops/exchangeRates 表）
+│       ├── excel-parser.ts # 交易明细Excel解析（含负责人列）
 │       ├── report-parser.ts # 多报表解析器（结算/仓储/广告/退货/产品成本/尾程运费）
-│       └── profit-calculator.ts # 利润计算（支持多报表合并）
+│       └── profit-calculator.ts # 利润计算（支持多报表合并、负责人字段）
 ├── DESIGN.md               # 设计规范
 ├── next.config.ts          # Next.js 配置
 ├── package.json            # 项目依赖管理
@@ -56,17 +59,23 @@
 - **多Sheet导出**：SKU利润表 + 共享费用 + 全局收支核对
 - **历史记录**：IndexedDB本地存储，按月保存
 - **可视化**：趋势图表 (recharts)
+- **多店铺管理**：动态店铺增删改，每个店铺独立设置货币和默认负责人
+- **汇率换算**：支持USD/CAD/EUR/GBP/JPY/CNY等多币种换算，利润表可切换显示货币
+- **负责人管理**：店铺级别默认负责人 + SKU级别负责人（从Excel读取）
 
 ### 核心文件说明
 
 | 文件 | 说明 |
 |------|------|
-| `src/lib/types.ts` | 全局类型定义，含 SKUProfitRow(41列)、ReportType、ReportMeta、SettlementReport 等 |
-| `src/lib/excel-parser.ts` | 交易明细Excel解析，含列名归一化、交易类型识别 |
+| `src/lib/types.ts` | 全局类型定义，含 SKUProfitRow(41列)、ReportType、ReportMeta、SettlementReport、ExchangeRate、CURRENCY_OPTIONS 等 |
+| `src/lib/currency.ts` | 汇率换算工具函数（convertAmount、formatCurrency） |
+| `src/lib/excel-parser.ts` | 交易明细Excel解析，含列名归一化、交易类型识别、负责人列解析 |
 | `src/lib/report-parser.ts` | 多报表解析器：7种报表类型 + 自动识别 |
-| `src/lib/profit-calculator.ts` | 利润计算，41列模板，支持多报表数据合并 |
-| `src/lib/idb.ts` | IndexedDB 本地存储操作 |
+| `src/lib/profit-calculator.ts` | 利润计算，41列模板，支持多报表数据合并、负责人字段 |
+| `src/lib/idb.ts` | IndexedDB 本地存储操作（含 shops/exchangeRates 表） |
 | `src/app/import/page.tsx` | 数据导入页，含报表类型选择器、已上传报表列表、利润表预览与导出 |
+| `src/app/settings/page.tsx` | 店铺管理页，支持增删改店铺、货币单位、默认负责人 |
+| `src/app/exchange-rates/page.tsx` | 汇率管理页，支持增删改汇率规则 |
 
 ### 多报表支持说明
 

@@ -61,6 +61,7 @@ export interface Transaction {
   orderId: string;
   storeName: string;
   category: string;
+  manager: string;
   rawRow: Record<string, string>;
 }
 
@@ -291,6 +292,23 @@ export interface Shop {
   id: number;
   name: string;
   createdAt: string;
+  currency: string;
+  defaultManager: string;
+}
+
+export const CURRENCY_OPTIONS = [
+  { value: 'USD', label: 'USD ($)', symbol: '$' },
+  { value: 'CAD', label: 'CAD (C$)', symbol: 'C$' },
+  { value: 'EUR', label: 'EUR (€)', symbol: '€' },
+  { value: 'GBP', label: 'GBP (£)', symbol: '£' },
+  { value: 'JPY', label: 'JPY (¥)', symbol: '¥' },
+  { value: 'CNY', label: 'CNY (¥)', symbol: '¥' },
+  { value: 'AUD', label: 'AUD (A$)', symbol: 'A$' },
+  { value: 'MXN', label: 'MXN (MX$)', symbol: 'MX$' },
+];
+
+export function getCurrencySymbol(code: string): string {
+  return CURRENCY_OPTIONS.find(c => c.value === code)?.symbol || '$';
 }
 
 export const DEFAULT_SHOP_NAMES = ['一店', '二店', '三店'];
@@ -301,12 +319,21 @@ export interface StoreConfig {
   currency: string;
   subscriptionFee: number;
   otherSharedFees: number;
+  defaultManager?: string;
+}
+
+export interface ExchangeRate {
+  id?: number;
+  fromCurrency: string;
+  toCurrency: string;
+  rate: number;
+  updatedAt: string;
 }
 
 export const DEFAULT_STORES: StoreConfig[] = [
-  { name: '一店', currency: 'USD', subscriptionFee: 39.99, otherSharedFees: 0 },
-  { name: '二店', currency: 'USD', subscriptionFee: 39.99, otherSharedFees: 0 },
-  { name: '三店', currency: 'USD', subscriptionFee: 39.99, otherSharedFees: 0 },
+  { name: '一店', currency: 'USD', subscriptionFee: 39.99, otherSharedFees: 0, defaultManager: '' },
+  { name: '二店', currency: 'USD', subscriptionFee: 39.99, otherSharedFees: 0, defaultManager: '' },
+  { name: '三店', currency: 'USD', subscriptionFee: 39.99, otherSharedFees: 0, defaultManager: '' },
 ];
 
 export const ALL_STORES = '全部' as const;

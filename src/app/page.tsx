@@ -3,8 +3,10 @@
 import { useEffect, useState, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
-import { getAllMonthlyData, getAllProfitReports } from '@/lib/idb';
-import { MonthlyData, SKUProfitRow, ALL_STORES, getShopLabel, getShopColor } from '@/lib/types';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { getAllMonthlyData, getAllProfitReports, getExchangeRates } from '@/lib/idb';
+import { MonthlyData, SKUProfitRow, ALL_STORES, getShopLabel, getShopColor, CURRENCY_OPTIONS, getCurrencySymbol } from '@/lib/types';
+import { convertAmount } from '@/lib/currency';
 import { ShopFilter } from '@/components/layout/shop-filter';
 import { useShops } from '@/hooks/use-shops';
 import { TrendingUp, DollarSign, Package, Percent } from 'lucide-react';
@@ -46,6 +48,8 @@ export default function DashboardPage() {
   const [allData, setAllData] = useState<MonthlyData[]>([]);
   const [loading, setLoading] = useState(true);
   const [storeFilter, setStoreFilter] = useState<string>(ALL_STORES);
+  const [displayCurrency, setDisplayCurrency] = useState('CNY');
+  const [exchangeRates, setExchangeRates] = useState<any[]>([]);
 
   const availableStores = useMemo(() => {
     const storeSet = new Set<string>();
@@ -57,7 +61,23 @@ export default function DashboardPage() {
 
   useEffect(() => {
     loadData();
+    loadExchangeRates();
   }, []);
+
+  async function loadExchangeRates() {
+    try {
+      const rates = await getExchangeRates();
+      setExchangeRates(rates);
+    } catch (e) {
+      console.error('加载汇率失败:', e);
+    }
+  }
+
+  function convert(val: number, fromCurrency: string = 'USD') {
+    return convertAmount(val, fromCurrency, displayCurrency, exchangeRates);
+  }
+
+  const currencySymbol = getCurrencySymbol(displayCurrency);
 
   async function loadData() {
     try {
@@ -207,6 +227,16 @@ export default function DashboardPage() {
             value={storeFilter}
             onChange={setStoreFilter}
           />
+          <Select value={displayCurrency} onValueChange={setDisplayCurrency}>
+            <SelectTrigger className="w-28">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {CURRENCY_OPTIONS.map(c => (
+                <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
       </div>
 
@@ -219,7 +249,7 @@ export default function DashboardPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              ¥{kpis.totalSales.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              {currencySymbol}{convert(kpis.totalSales, 'USD').toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </div>
             <p className="text-xs text-muted-foreground">全部店铺汇总</p>
           </CardContent>
@@ -232,7 +262,7 @@ export default function DashboardPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold" style={{ color: kpis.totalNetIncome >= 0 ? '#10b981' : '#ef4444' }}>
-              ¥{kpis.totalNetIncome.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              {currencySymbol}{convert(kpis.totalNetIncome, 'USD').toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </div>
             <p className="text-xs text-muted-foreground">总收入 - 总费用</p>
           </CardContent>
@@ -275,7 +305,7 @@ export default function DashboardPage() {
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="month" />
                 <YAxis />
-                <Tooltip formatter={(value: number) => `¥${value.toLocaleString()}`} />
+                <Tooltip formatter={(value: number) => `${currencySymbol}${value.toLocaleString()}`} />
                 <Legend />
                 {storeNames.map((store, i) => (
                   <Line
@@ -295,7 +325,7 @@ export default function DashboardPage() {
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="month" />
                 <YAxis />
-                <Tooltip formatter={(value: number) => `¥${value.toLocaleString()}`} />
+                <Tooltip formatter={(value: number) => `${currencySymbol}${value.toLocaleString()}`} />
                 <Legend />
                 <Line type="monotone" dataKey="totalSales" name="销售额" stroke="#1e3a5f" strokeWidth={2} />
               </LineChart>
@@ -317,7 +347,7 @@ export default function DashboardPage() {
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis dataKey="month" />
                   <YAxis />
-                  <Tooltip formatter={(value: number) => `¥${value.toLocaleString()}`} />
+                  <Tooltip formatter={(value: number) => `${currencySymbol}${value.toLocaleString()}`} />
                   <Legend />
                   {storeNames.map((store, i) => (
                     <Line
@@ -337,7 +367,7 @@ export default function DashboardPage() {
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis dataKey="month" />
                   <YAxis />
-                  <Tooltip formatter={(value: number) => `¥${value.toLocaleString()}`} />
+                  <Tooltip formatter={(value: number) => `${currencySymbol}${value.toLocaleString()}`} />
                   <Legend />
                   <Bar dataKey="netIncome" name="净收入" fill="#10b981" radius={[4, 4, 0, 0]} />
                 </BarChart>
@@ -400,11 +430,11 @@ export default function DashboardPage() {
                         </span>
                       </td>
                       <td className="text-right py-2 px-2">
-                        ¥{totals.totalSales.toLocaleString('zh-CN', { minimumFractionDigits: 2 })}
+                        {currencySymbol}{convert(totals.totalSales, 'USD').toLocaleString('zh-CN', { minimumFractionDigits: 2 })}
                       </td>
                       <td className="text-right py-2 px-2">
                         <span style={{ color: totals.totalNetIncome >= 0 ? '#10b981' : '#ef4444' }}>
-                          ¥{totals.totalNetIncome.toLocaleString('zh-CN', { minimumFractionDigits: 2 })}
+                          {currencySymbol}{convert(totals.totalNetIncome, 'USD').toLocaleString('zh-CN', { minimumFractionDigits: 2 })}
                         </span>
                       </td>
                       <td className="text-right py-2 px-2">{totals.profitRate.toFixed(1)}%</td>

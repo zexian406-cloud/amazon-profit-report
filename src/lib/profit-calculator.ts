@@ -4,11 +4,13 @@ export function calculateSKUProfit(
   transactions: Transaction[],
   sharedFees: SharedFee[],
   month: string,
-  storeName: string
+  storeName: string,
+  defaultManager: string = ''
 ): { skuRows: SKUProfitRow[]; reconciliation: Reconciliation } {
   return calculateSKUProfitWithReports(
     transactions, sharedFees, month, storeName,
-    undefined, undefined, undefined, undefined, undefined, undefined
+    undefined, undefined, undefined, undefined, undefined, undefined,
+    defaultManager
   );
 }
 
@@ -32,6 +34,7 @@ export function calculateSKUProfitWithReports(
   settlementReport?: SettlementReport,
   productCostItems?: ProductCostItem[],
   deliveryFeeItems?: DeliveryFeeItem[],
+  defaultManager: string = '',
 ): { skuRows: SKUProfitRow[]; reconciliation: Reconciliation } {
   // 按SKU分组
   const skuGroups = new Map<string, Transaction[]>();
@@ -389,7 +392,7 @@ export function calculateSKUProfitWithReports(
       fakeOrderFee,
       netIncome,
       profitMargin,
-      manager: '',
+      manager: defaultManager || '',
       dataSources: {
         storageFee: storageFeeSource,
         adFee: adFeeSource,

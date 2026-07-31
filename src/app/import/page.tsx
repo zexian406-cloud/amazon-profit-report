@@ -288,6 +288,8 @@ export default function ImportPage() {
       const allSharedFees = [...transactionResult.sharedFees, ...extraFees];
 
       // 合并广告费中的SKU级别数据
+      const currentShop = shops.find(s => s.name === transactionResult.storeName);
+      const defaultManager = currentShop?.defaultManager || '';
       const { skuRows: rows, reconciliation: recon } = calculateSKUProfitWithReports(
         transactionResult.transactions,
         allSharedFees,
@@ -299,6 +301,7 @@ export default function ImportPage() {
         settlementReport,
         productCostItems,
         deliveryFeeItems,
+        defaultManager,
       );
 
       setSkuRows(rows);

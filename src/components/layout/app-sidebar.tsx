@@ -59,6 +59,11 @@ const navItems = [
     icon: Store,
     href: '/settings',
   },
+  {
+    title: '汇率管理',
+    icon: BarChart3,
+    href: '/exchange-rates',
+  },
 ];
 
 export function AppSidebar() {

@@ -1,7 +1,7 @@
-import { MonthlyData, SharedFee, StoreConfig, SKUProfitRow, HistoryMonth, Shop, DEFAULT_SHOP_NAMES } from './types';
+import { MonthlyData, SharedFee, StoreConfig, SKUProfitRow, HistoryMonth, Shop, DEFAULT_SHOP_NAMES, ExchangeRate } from './types';
 
 const DB_NAME = 'amazon_profit_db';
-const DB_VERSION = 2;
+const DB_VERSION = 3;
 
 function openDB(): Promise<IDBDatabase> {
   return new Promise((resolve, reject) => {
@@ -22,6 +22,9 @@ function openDB(): Promise<IDBDatabase> {
       }
       if (!db.objectStoreNames.contains('shops')) {
         db.createObjectStore('shops', { keyPath: 'id', autoIncrement: true });
+      }
+      if (!db.objectStoreNames.contains('exchangeRates')) {
+        db.createObjectStore('exchangeRates', { keyPath: 'id', autoIncrement: true });
       }
     };
     request.onsuccess = () => resolve(request.result);
@@ -66,6 +69,88 @@ export async function deleteMonthlyData(id: number): Promise<void> {
     const tx = db.transaction('monthlyData', 'readwrite');
     const store = tx.objectStore('monthlyData');
     store.delete(id);
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error);
+  });
+}
+
+export async function updateShop(id: number, updates: Partial<Pick<Shop, 'name' | 'currency' | 'defaultManager'>>): Promise<void> {
+  const db = await openDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(['shops', 'storeConfigs'], 'readwrite');
+    const shopReq = tx.objectStore('shops').get(id);
+    shopReq.onsuccess = () => {
+      const shop = shopReq.result;
+      if (shop) {
+        Object.assign(shop, updates);
+        tx.objectStore('shops').put(shop);
+        // 同步更新 storeConfigs
+        const configReq = tx.objectStore('storeConfigs').get(id);
+        configReq.onsuccess = () => {
+          const config = configReq.result;
+          if (config) {
+            Object.assign(config, updates);
+            tx.objectStore('storeConfigs').put(config);
+          }
+        };
+      }
+    };
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error);
+  });
+}
+
+// === Exchange Rates ===
+export async function getExchangeRates(): Promise<ExchangeRate[]> {
+  const db = await openDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction('exchangeRates', 'readonly');
+    const req = tx.objectStore('exchangeRates').getAll();
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error);
+  });
+}
+
+export async function addExchangeRate(rate: Omit<ExchangeRate, 'id'>): Promise<ExchangeRate> {
+  const db = await openDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction('exchangeRates', 'readwrite');
+    const store = tx.objectStore('exchangeRates');
+    const allReq = store.getAll();
+    allReq.onsuccess = () => {
+      const maxId = allReq.result.reduce((max, r) => Math.max(max, r.id), 0);
+      const newRate: ExchangeRate = { id: maxId + 1, ...rate };
+      const req = store.add(newRate);
+      req.onsuccess = () => resolve(newRate);
+      req.onerror = () => reject(req.error);
+    };
+    allReq.onerror = () => reject(allReq.error);
+  });
+}
+
+export async function updateExchangeRate(id: number, rate: Partial<ExchangeRate>): Promise<void> {
+  const db = await openDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction('exchangeRates', 'readwrite');
+    const store = tx.objectStore('exchangeRates');
+    const req = store.get(id);
+    req.onsuccess = () => {
+      const existing = req.result;
+      if (existing) {
+        Object.assign(existing, rate);
+        store.put(existing);
+      }
+    };
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error);
+  });
+}
+
+export async function deleteExchangeRate(id: number): Promise<void> {
+  const db = await openDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction('exchangeRates', 'readwrite');
+    tx.objectStore('exchangeRates').delete(id);
     tx.oncomplete = () => resolve();
     tx.onerror = () => reject(tx.error);
   });
@@ -206,10 +291,10 @@ export async function getShops(): Promise<Shop[]> {
   });
   // 首次使用自动初始化三个默认店铺
   if (shops.length === 0) {
-    const defaults = [
-      { id: 1, name: '一店', createdAt: new Date().toISOString() },
-      { id: 2, name: '二店', createdAt: new Date().toISOString() },
-      { id: 3, name: '三店', createdAt: new Date().toISOString() },
+    const defaults: Shop[] = [
+      { id: 1, name: '一店', createdAt: new Date().toISOString(), currency: 'USD', defaultManager: '' },
+      { id: 2, name: '二店', createdAt: new Date().toISOString(), currency: 'USD', defaultManager: '' },
+      { id: 3, name: '三店', createdAt: new Date().toISOString(), currency: 'USD', defaultManager: '' },
     ];
     const writeTx = db.transaction(['shops', 'storeConfigs'], 'readwrite');
     const shopStore = writeTx.objectStore('shops');
@@ -227,7 +312,7 @@ export async function getShops(): Promise<Shop[]> {
   return shops;
 }
 
-export async function addShop(name: string): Promise<Shop> {
+export async function addShop(name: string, currency = 'USD', defaultManager = ''): Promise<Shop> {
   const db = await openDB();
   return new Promise((resolve, reject) => {
     const tx = db.transaction('shops', 'readwrite');
@@ -235,12 +320,12 @@ export async function addShop(name: string): Promise<Shop> {
     const allReq = store.getAll();
     allReq.onsuccess = () => {
       const maxId = allReq.result.reduce((max, s) => Math.max(max, s.id), 0);
-      const shop: Shop = { id: maxId + 1, name, createdAt: new Date().toISOString() };
+      const shop: Shop = { id: maxId + 1, name, createdAt: new Date().toISOString(), currency, defaultManager };
       const req = store.add(shop);
       req.onsuccess = () => {
         // 同步创建默认 StoreConfig
         const configTx = db.transaction('storeConfigs', 'readwrite');
-        configTx.objectStore('storeConfigs').add({ id: shop.id, name, currency: 'USD', subscriptionFee: 39.99, otherSharedFees: 0 });
+        configTx.objectStore('storeConfigs').add({ id: shop.id, name, currency, subscriptionFee: 39.99, otherSharedFees: 0 });
         resolve(shop);
       };
       req.onerror = () => reject(req.error);

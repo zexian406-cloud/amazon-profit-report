@@ -4,14 +4,17 @@ import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogClose } from '@/components/ui/dialog';
 import { useShops } from '@/hooks/use-shops';
-import { getShopColor } from '@/lib/types';
-import { Store, Plus, Pencil, Trash2, AlertTriangle } from 'lucide-react';
+import { getShopColor, CURRENCY_OPTIONS } from '@/lib/types';
+import { Store, Plus, Pencil, Trash2, AlertTriangle, DollarSign, User } from 'lucide-react';
 
 export default function SettingsPage() {
-  const { shops, addShop, removeShop, renameShop } = useShops();
+  const { shops, addShop, removeShop, renameShop, updateShop } = useShops();
   const [newShopName, setNewShopName] = useState('');
+  const [newShopCurrency, setNewShopCurrency] = useState('USD');
+  const [newShopManager, setNewShopManager] = useState('');
   const [editingName, setEditingName] = useState('');
   const [editingId, setEditingId] = useState<number | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<number | null>(null);
@@ -23,8 +26,10 @@ export default function SettingsPage() {
       alert('店铺名称已存在，请使用其他名称');
       return;
     }
-    await addShop(name);
+    await addShop(name, newShopCurrency, newShopManager);
     setNewShopName('');
+    setNewShopCurrency('USD');
+    setNewShopManager('');
   };
 
   const handleRename = async (id: number) => {
@@ -49,6 +54,20 @@ export default function SettingsPage() {
     setDeleteConfirm(null);
   };
 
+  const handleCurrencyChange = async (shopId: number, currency: string) => {
+    const shop = shops.find(s => s.id === shopId);
+    if (shop) {
+      await updateShop(shopId, { ...shop, currency } as any);
+    }
+  };
+
+  const handleManagerChange = async (shopId: number, defaultManager: string) => {
+    const shop = shops.find(s => s.id === shopId);
+    if (shop) {
+      await updateShop(shopId, { ...shop, defaultManager } as any);
+    }
+  };
+
   return (
     <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
@@ -62,16 +81,32 @@ export default function SettingsPage() {
       <Card>
         <CardHeader>
           <CardTitle className="text-base">添加新店铺</CardTitle>
-          <CardDescription>输入店铺名称后点击添加</CardDescription>
+          <CardDescription>输入店铺名称、选择货币单位和默认负责人</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="flex gap-3">
+          <div className="flex flex-wrap gap-3">
             <Input
-              placeholder="输入店铺名称，如：四店"
+              placeholder="店铺名称，如：四店"
               value={newShopName}
               onChange={(e) => setNewShopName(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && handleAdd()}
               className="max-w-xs"
+            />
+            <Select value={newShopCurrency} onValueChange={setNewShopCurrency}>
+              <SelectTrigger className="w-[140px]">
+                <SelectValue placeholder="货币单位" />
+              </SelectTrigger>
+              <SelectContent>
+                {CURRENCY_OPTIONS.map((c) => (
+                  <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Input
+              placeholder="默认负责人（可选）"
+              value={newShopManager}
+              onChange={(e) => setNewShopManager(e.target.value)}
+              className="max-w-[180px]"
             />
             <Button onClick={handleAdd} className="gap-2">
               <Plus className="h-4 w-4" />
@@ -85,79 +120,117 @@ export default function SettingsPage() {
       <Card>
         <CardHeader>
           <CardTitle className="text-base">当前店铺列表</CardTitle>
-          <CardDescription>共 {shops.length} 个店铺，点击店铺可编辑名称</CardDescription>
+          <CardDescription>共 {shops.length} 个店铺，可编辑名称、货币单位和默认负责人</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="space-y-3">
             {shops.map((shop) => (
               <div
                 key={shop.id}
-                className="flex items-center justify-between p-4 rounded-lg border bg-card hover:bg-accent/5 transition-colors"
+                className="p-4 rounded-lg border bg-card hover:bg-accent/5 transition-colors"
               >
-                <div className="flex items-center gap-3">
-                  <div
-                    className="w-10 h-10 rounded-lg flex items-center justify-center text-white font-medium text-sm"
-                    style={{ backgroundColor: getShopColor(shop.name) }}
-                  >
-                    <Store className="h-5 w-5" />
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-3">
+                    <div
+                      className="w-10 h-10 rounded-lg flex items-center justify-center text-white font-medium text-sm"
+                      style={{ backgroundColor: getShopColor(shop.name) }}
+                    >
+                      <Store className="h-5 w-5" />
+                    </div>
+                    <div>
+                      {editingId === shop.id ? (
+                        <div className="flex items-center gap-2">
+                          <Input
+                            value={editingName}
+                            onChange={(e) => setEditingName(e.target.value)}
+                            onKeyDown={(e) => e.key === 'Enter' && handleRename(shop.id)}
+                            className="h-8 w-40"
+                            autoFocus
+                          />
+                          <Button size="sm" variant="default" onClick={() => handleRename(shop.id)}>确定</Button>
+                          <Button size="sm" variant="ghost" onClick={() => { setEditingId(null); setEditingName(''); }}>取消</Button>
+                        </div>
+                      ) : (
+                        <span className="font-medium">{shop.name}</span>
+                      )}
+                    </div>
                   </div>
-                  <div>
-                    {editingId === shop.id ? (
-                      <div className="flex items-center gap-2">
-                        <Input
-                          value={editingName}
-                          onChange={(e) => setEditingName(e.target.value)}
-                          onKeyDown={(e) => e.key === 'Enter' && handleRename(shop.id)}
-                          className="h-8 w-40"
-                          autoFocus
-                        />
-                        <Button size="sm" variant="default" onClick={() => handleRename(shop.id)}>确定</Button>
-                        <Button size="sm" variant="ghost" onClick={() => { setEditingId(null); setEditingName(''); }}>取消</Button>
-                      </div>
-                    ) : (
-                      <span className="font-medium">{shop.name}</span>
-                    )}
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => { setEditingId(shop.id); setEditingName(shop.name); }}
+                    >
+                      <Pencil className="h-4 w-4" />
+                    </Button>
+                    <Dialog open={deleteConfirm === shop.id} onOpenChange={(open) => !open && setDeleteConfirm(null)}>
+                      <DialogTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setDeleteConfirm(shop.id)}
+                          disabled={shops.length <= 1}
+                        >
+                          <Trash2 className="h-4 w-4 text-destructive" />
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent>
+                        <DialogHeader>
+                          <DialogTitle className="flex items-center gap-2">
+                            <AlertTriangle className="h-5 w-5 text-destructive" />
+                            确认删除店铺
+                          </DialogTitle>
+                        </DialogHeader>
+                        <p className="text-sm text-muted-foreground">
+                          删除「{shop.name}」将同时清除该店铺的所有导入数据。此操作不可撤销，请确认。
+                        </p>
+                        <DialogFooter>
+                          <DialogClose asChild>
+                            <Button variant="outline">取消</Button>
+                          </DialogClose>
+                          <Button variant="destructive" onClick={() => handleDelete(shop.id)}>
+                            确认删除
+                          </Button>
+                        </DialogFooter>
+                      </DialogContent>
+                    </Dialog>
                   </div>
                 </div>
-                <div className="flex items-center gap-2">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => { setEditingId(shop.id); setEditingName(shop.name); }}
-                  >
-                    <Pencil className="h-4 w-4" />
-                  </Button>
-                  <Dialog open={deleteConfirm === shop.id} onOpenChange={(open) => !open && setDeleteConfirm(null)}>
-                    <DialogTrigger asChild>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => setDeleteConfirm(shop.id)}
-                        disabled={shops.length <= 1}
-                      >
-                        <Trash2 className="h-4 w-4 text-destructive" />
-                      </Button>
-                    </DialogTrigger>
-                    <DialogContent>
-                      <DialogHeader>
-                        <DialogTitle className="flex items-center gap-2">
-                          <AlertTriangle className="h-5 w-5 text-destructive" />
-                          确认删除店铺
-                        </DialogTitle>
-                      </DialogHeader>
-                      <p className="text-sm text-muted-foreground">
-                        删除「{shop.name}」将同时清除该店铺的所有导入数据。此操作不可撤销，请确认。
-                      </p>
-                      <DialogFooter>
-                        <DialogClose asChild>
-                          <Button variant="outline">取消</Button>
-                        </DialogClose>
-                        <Button variant="destructive" onClick={() => handleDelete(shop.id)}>
-                          确认删除
-                        </Button>
-                      </DialogFooter>
-                    </DialogContent>
-                  </Dialog>
+
+                {/* 货币单位和默认负责人 */}
+                <div className="flex items-center gap-6 pl-[52px]">
+                  <div className="flex items-center gap-2">
+                    <DollarSign className="h-4 w-4 text-muted-foreground" />
+                    <span className="text-sm text-muted-foreground">货币：</span>
+                    <Select
+                      value={shop.currency || 'USD'}
+                      onValueChange={(v) => handleCurrencyChange(shop.id, v)}
+                    >
+                      <SelectTrigger className="h-8 w-[130px]">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {CURRENCY_OPTIONS.map((c) => (
+                          <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <User className="h-4 w-4 text-muted-foreground" />
+                    <span className="text-sm text-muted-foreground">负责人：</span>
+                    <Input
+                      defaultValue={shop.defaultManager || ''}
+                      placeholder="默认负责人"
+                      className="h-8 w-[160px]"
+                      onBlur={(e) => handleManagerChange(shop.id, e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          handleManagerChange(shop.id, (e.target as HTMLInputElement).value);
+                        }
+                      }}
+                    />
+                  </div>
                 </div>
               </div>
             ))}

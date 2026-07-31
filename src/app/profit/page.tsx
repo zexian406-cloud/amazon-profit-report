@@ -11,9 +11,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { getAllMonthlyData, getSharedFees } from '@/lib/idb';
+import { getAllMonthlyData, getSharedFees, getExchangeRates } from '@/lib/idb';
 import { calculateSKUProfit } from '@/lib/profit-calculator';
 import { MonthlyData, SharedFee, SKUProfitRow, Reconciliation, ALL_STORES } from '@/lib/types';
+import { CURRENCY_OPTIONS, ExchangeRate, getCurrencySymbol, convertAmount, formatCurrency } from '@/lib/currency';
+import { useShops } from '@/hooks/use-shops';
 import { ShopFilter } from '@/components/layout/shop-filter';
 import { Search, ArrowUpDown, Download } from 'lucide-react';
 import * as XLSX from 'xlsx';
@@ -64,9 +66,12 @@ const COLUMNS = [
 ];
 
 export default function ProfitPage() {
+  const { shops } = useShops();
   const [monthlyDataList, setMonthlyDataList] = useState<MonthlyData[]>([]);
   const [selectedMonth, setSelectedMonth] = useState<string>('');
   const [selectedStore, setSelectedStore] = useState<string>('');
+  const [displayCurrency, setDisplayCurrency] = useState('CNY');
+  const [exchangeRates, setExchangeRates] = useState<ExchangeRate[]>([]);
   const [skuRows, setSkuRows] = useState<SKUProfitRow[]>([]);
   const [sharedFees, setSharedFees] = useState<SharedFee[]>([]);
   const [reconciliation, setReconciliation] = useState<Reconciliation | null>(null);
@@ -183,8 +188,20 @@ export default function ProfitPage() {
     const val = (row as any)[col.key];
     if (val === undefined || val === null || val === '') return '-';
     if (col.type === 'currency') {
-      const v = val as number;
-      return v < 0 ? `-$${Math.abs(v).toFixed(2)}` : `$${v.toFixed(2)}`;
+      let v = val as number;
+      // 汇率换算
+      if (displayCurrency && exchangeRates.length > 0 && displayCurrency !== 'USD') {
+        const shop = shops.find(s => s.name === row.storeName);
+        const fromCurrency = shop?.currency || 'USD';
+        if (fromCurrency !== displayCurrency) {
+          const rate = exchangeRates.find(
+            r => r.fromCurrency === fromCurrency && r.toCurrency === displayCurrency
+          );
+          if (rate) v = v * rate.rate;
+        }
+      }
+      const symbol = getCurrencySymbol(displayCurrency || 'USD');
+      return v < 0 ? `-${symbol}${Math.abs(v).toFixed(2)}` : `${symbol}${v.toFixed(2)}`;
     }
     if (col.type === 'percent') {
       return `${((val as number) * 100).toFixed(1)}%`;
@@ -310,6 +327,19 @@ export default function ProfitPage() {
                   <SelectItem value="全部">全部店铺</SelectItem>
                   {stores.map(s => (
                     <SelectItem key={s} value={s}>{s}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1">
+              <label className="text-xs font-medium">显示货币</label>
+              <Select value={displayCurrency} onValueChange={setDisplayCurrency}>
+                <SelectTrigger className="w-28">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {CURRENCY_OPTIONS.map(c => (
+                    <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>

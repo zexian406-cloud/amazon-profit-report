@@ -2,7 +2,7 @@
 
 import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
 import { Shop } from '@/lib/types';
-import { getShops, addShop as addShopIdb, renameShop as renameShopIdb, deleteShop as deleteShopIdb } from '@/lib/idb';
+import { getShops, addShop as addShopIdb, renameShop as renameShopIdb, deleteShop as deleteShopIdb, updateShop as updateShopIdb } from '@/lib/idb';
 
 const DEFAULT_SHOP_COLORS = [
   '#1e3a5f',
@@ -20,9 +20,10 @@ const DEFAULT_SHOP_COLORS = [
 interface ShopContextType {
   shops: Shop[];
   loading: boolean;
-  addShop: (name: string) => Promise<void>;
+  addShop: (name: string, currency?: string, defaultManager?: string) => Promise<void>;
   removeShop: (id: number) => Promise<void>;
   renameShop: (id: number, newName: string) => Promise<void>;
+  updateShop: (id: number, data: { currency?: string; defaultManager?: string }) => Promise<void>;
   getShopColor: (name: string) => string;
   getShopNames: () => string[];
 }
@@ -33,6 +34,7 @@ const ShopContext = createContext<ShopContextType>({
   addShop: async () => {},
   removeShop: async () => {},
   renameShop: async () => {},
+  updateShop: async () => {},
   getShopColor: () => '#1e3a5f',
   getShopNames: () => [],
 });
@@ -56,8 +58,8 @@ export function ShopProvider({ children }: { children: React.ReactNode }) {
     loadShops();
   }, [loadShops]);
 
-  const addShop = useCallback(async (name: string) => {
-    const newShop = await addShopIdb(name);
+  const addShop = useCallback(async (name: string, currency: string = 'USD', defaultManager: string = '') => {
+    const newShop = await addShopIdb(name, currency, defaultManager);
     setShops(prev => [...prev, newShop]);
   }, []);
 
@@ -73,6 +75,13 @@ export function ShopProvider({ children }: { children: React.ReactNode }) {
     ));
   }, []);
 
+  const updateShop = useCallback(async (id: number, data: { currency?: string; defaultManager?: string }) => {
+    await updateShopIdb(id, data);
+    setShops(prev => prev.map((s) =>
+      s.id === id ? { ...s, ...data } : s
+    ));
+  }, []);
+
   const getShopColor = useCallback((name: string) => {
     const index = shops.findIndex((s) => s.name === name);
     return DEFAULT_SHOP_COLORS[index % DEFAULT_SHOP_COLORS.length];
@@ -84,7 +93,7 @@ export function ShopProvider({ children }: { children: React.ReactNode }) {
 
   return (
     <ShopContext.Provider
-      value={{ shops, loading, addShop, removeShop, renameShop, getShopColor, getShopNames }}
+      value={{ shops, loading, addShop, removeShop, renameShop, updateShop, getShopColor, getShopNames }}
     >
       {children}
     </ShopContext.Provider>

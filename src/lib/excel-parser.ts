@@ -120,6 +120,7 @@ function normalizeHeader(header: string): string {
     'category': 'category', '类别': 'category', '费用类别': 'category',
     '商品名称': 'productName', 'product-name': 'productName', 'productname': 'productName',
     'title': 'productName', '商品标题': 'productName',
+    '负责人': 'manager', 'manager': 'manager', '责任人': 'manager', '经办人': 'manager',
   };
 
   const key = header.toLowerCase().trim().replace(/[\s_-]+/g, '-');
@@ -202,6 +203,7 @@ export function parseExcel(file: File): Promise<ParseResult> {
             orderId,
             storeName,
             category,
+            manager: row['manager'] || '',
             rawRow: row,
           });
         }
