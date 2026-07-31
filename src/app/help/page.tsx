@@ -9,7 +9,6 @@ import {
   Settings,
   DollarSign,
   BookOpen,
-  Download,
   Table,
   RefreshCw,
 } from 'lucide-react';
@@ -208,25 +207,7 @@ const sections = [
       },
     ],
   },
-  {
-    icon: Download,
-    title: '部署与分享',
-    items: [
-      {
-        sub: '部署到Vercel（免费）',
-        detail: `① 将代码推送到 GitHub 仓库
-② 在 Vercel 导入该仓库，自动部署
-③ 获得一个 https://xxx.vercel.app 域名
-④ 分享链接给团队成员使用`,
-      },
-      {
-        sub: '数据独立性',
-        detail: `每个用户的浏览器本地存储，数据互不干扰。
-如需多人协作，可考虑后续接入后端数据库。`,
-      },
-    ],
-  },
-];
+  ];
 
 export default function HelpPage() {
   return (
