@@ -13,21 +13,46 @@
 ```
 ├── public/                 # 静态资源
 ├── scripts/                # 构建与启动脚本
-│   ├── build.sh            # 构建脚本
-│   ├── dev.sh              # 开发环境启动脚本
-│   ├── prepare.sh          # 预处理脚本
-│   └── start.sh            # 生产环境启动脚本
 ├── src/
 │   ├── app/                # 页面路由与布局
-│   ├── components/ui/      # Shadcn UI 组件库
+│   │   ├── page.tsx        # 首页看板
+│   │   ├── layout.tsx      # 根布局（含侧边栏）
+│   │   ├── globals.css     # 全局样式
+│   │   ├── import/         # 数据导入页
+│   │   ├── profit/         # SKU利润表页
+│   │   ├── history/        # 历史对比页
+│   │   └── fees/           # 费用分析页
+│   ├── components/
+│   │   ├── layout/         # 布局组件（侧边栏）
+│   │   └── ui/             # Shadcn UI 组件库
 │   ├── hooks/              # 自定义 Hooks
-│   ├── lib/                # 工具库
-│   │   └── utils.ts        # 通用工具函数 (cn)
-│   └── server.ts           # 自定义服务端入口
+│   └── lib/                # 工具库
+│       ├── utils.ts        # 通用工具函数
+│       ├── types.ts        # 类型定义
+│       ├── idb.ts          # IndexedDB 操作
+│       ├── excel-parser.ts # Excel 解析
+│       └── profit-calculator.ts # 利润计算
+├── DESIGN.md               # 设计规范
 ├── next.config.ts          # Next.js 配置
 ├── package.json            # 项目依赖管理
 └── tsconfig.json           # TypeScript 配置
 ```
+
+### 项目说明
+
+这是一个亚马逊利润报表自动生成工具，核心功能：
+- **数据上传**：解析亚马逊交易明细Excel（settlement报告）
+- **自动归类**：按交易类型（Order/Refund/FBA Fee等）分类
+- **SKU利润表**：30+列明细，按SKU维度汇总
+- **多Sheet导出**：SKU利润表 + 共享费用 + 全局收支核对
+- **历史记录**：IndexedDB本地存储，按月保存
+- **可视化**：趋势图表 (recharts)
+
+### 核心依赖
+- `xlsx` - Excel解析与生成
+- `recharts` - 图表可视化
+- `lucide-react` - 图标库
+- `shadcn/ui` - UI组件库
 
 - 项目文件（如 app 目录、pages 目录、components 等）默认初始化到 `src/` 目录下。
 
