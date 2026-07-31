@@ -16,13 +16,13 @@ const COLORS = ['#1e3a5f', '#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'
 export default function FeesPage() {
   const [monthlyDataList, setMonthlyDataList] = useState<MonthlyData[]>([]);
   const [selectedMonth, setSelectedMonth] = useState('');
-  const [selectedStore, setSelectedStore] = useState('一店');
+  const [selectedStore, setSelectedStore] = useState<string>('全部');
   const [loading, setLoading] = useState(true);
   const [skuRows, setSkuRows] = useState<SKUProfitRow[]>([]);
   const [sharedFees, setSharedFees] = useState<SharedFee[]>([]);
 
   const months = [...new Set(monthlyDataList.map(d => d.month))].sort();
-  const stores = [...new Set(monthlyDataList.map(d => d.storeName))];
+  const stores = ['全部', ...new Set(monthlyDataList.map(d => d.storeName))];
 
   useEffect(() => {
     loadData();
@@ -40,7 +40,7 @@ export default function FeesPage() {
       setMonthlyDataList(data);
       if (data.length > 0) {
         setSelectedMonth(data[0].month);
-        setSelectedStore(data[0].storeName);
+        setSelectedStore('全部');
       }
     } catch (err) {
       console.error('加载数据失败:', err);
@@ -50,16 +50,35 @@ export default function FeesPage() {
   }
 
   async function loadFees() {
-    const data = monthlyDataList.find(
-      d => d.month === selectedMonth && d.storeName === selectedStore
-    );
-    if (!data) return;
+    if (selectedStore === '全部') {
+      const storeNames = [...new Set(monthlyDataList.map(d => d.storeName))];
+      let allRows: SKUProfitRow[] = [];
+      let allFees: SharedFee[] = [];
 
-    const fees = await getSharedFees(selectedMonth, selectedStore);
-    setSharedFees(fees);
+      for (const store of storeNames) {
+        const data = monthlyDataList.find(
+          d => d.month === selectedMonth && d.storeName === store
+        );
+        if (!data) continue;
+        const fees = await getSharedFees(selectedMonth, store);
+        const { skuRows: rows } = calculateSKUProfit(data.transactions, fees, selectedMonth, store);
+        allRows.push(...rows);
+        allFees = [...allFees, ...fees];
+      }
+      setSkuRows(allRows);
+      setSharedFees(allFees);
+    } else {
+      const data = monthlyDataList.find(
+        d => d.month === selectedMonth && d.storeName === selectedStore
+      );
+      if (!data) return;
 
-    const { skuRows: rows } = calculateSKUProfit(data.transactions, fees, selectedMonth, selectedStore);
-    setSkuRows(rows);
+      const fees = await getSharedFees(selectedMonth, selectedStore);
+      setSharedFees(fees);
+
+      const { skuRows: rows } = calculateSKUProfit(data.transactions, fees, selectedMonth, selectedStore);
+      setSkuRows(rows);
+    }
   }
 
   // 费用结构数据
@@ -112,7 +131,7 @@ export default function FeesPage() {
             </SelectTrigger>
             <SelectContent>
               {stores.map(s => (
-                <SelectItem key={s} value={s}>{s}</SelectItem>
+                <SelectItem key={s} value={s}>{s === '全部' ? '全部店铺' : s}</SelectItem>
               ))}
             </SelectContent>
           </Select>

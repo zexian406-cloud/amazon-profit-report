@@ -301,6 +301,44 @@ export const DEFAULT_STORES: StoreConfig[] = [
   { name: '三店', currency: 'USD', subscriptionFee: 39.99, otherSharedFees: 0 },
 ];
 
+// 店铺类型
+export type ShopKey = 'shop1' | 'shop2' | 'shop3';
+
+export const SHOPS: { key: ShopKey; label: string }[] = [
+  { key: 'shop1', label: '一店' },
+  { key: 'shop2', label: '二店' },
+  { key: 'shop3', label: '三店' },
+];
+
+export const SHOP_LABELS: Record<ShopKey, string> = {
+  shop1: '一店',
+  shop2: '二店',
+  shop3: '三店',
+};
+
+export const SHOP_KEYS: Record<string, ShopKey> = {
+  '一店': 'shop1',
+  '二店': 'shop2',
+  '三店': 'shop3',
+};
+
+export const ALL_STORES = '全部' as const;
+export type StoreFilter = string | typeof ALL_STORES;
+
+export const SHOP_COLORS: Record<ShopKey, string> = {
+  shop1: '#1e3a5f',
+  shop2: '#3b82f6',
+  shop3: '#10b981',
+};
+
+export function getShopLabel(storeName: string): string {
+  return storeName || '一店';
+}
+
+export function getShopKey(storeName: string): ShopKey {
+  return SHOP_KEYS[storeName] || 'shop1';
+}
+
 export const FEE_CATEGORY_MAP: Record<string, string> = {
   '广告费': 'AdFee',
   '广告': 'AdFee',

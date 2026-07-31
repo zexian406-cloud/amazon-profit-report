@@ -24,7 +24,7 @@ export default function HistoryPage() {
     orderCount: number;
   }[]>([]);
 
-  const stores = [...new Set(monthlyDataList.map(d => d.storeName))];
+  const stores = ['全部', ...new Set(monthlyDataList.map(d => d.storeName))];
 
   useEffect(() => {
     loadData();
@@ -48,8 +48,13 @@ export default function HistoryPage() {
   }
 
   async function buildComparison() {
-    const storeData = monthlyDataList.filter(d => d.storeName === selectedStore);
-    const comparisons: any[] = [];
+    const storeData = selectedStore === '全部'
+      ? monthlyDataList
+      : monthlyDataList.filter(d => d.storeName === selectedStore);
+
+    const monthMap = new Map<string, {
+      sales: number; income: number; orders: number; refunds: number; skuSet: Set<string>
+    }>();
 
     for (const data of storeData) {
       const fees = await getSharedFees(data.month, data.storeName);
@@ -58,14 +63,26 @@ export default function HistoryPage() {
       const orders = data.transactions.filter(t => t.type === 'Order');
       const sales = orders.reduce((s, t) => s + t.totalAmount, 0);
       const refunds = data.transactions.filter(t => t.type === 'Refund');
+      const refundSales = refunds.reduce((s, t) => s + Math.abs(t.totalAmount), 0);
 
+      const existing = monthMap.get(data.month) || { sales: 0, income: 0, orders: 0, refunds: 0, skuSet: new Set<string>() };
+      existing.sales += sales;
+      existing.income += reconciliation.skuNetIncome;
+      existing.orders += orders.length;
+      existing.refunds += refunds.length;
+      skuRows.forEach(r => existing.skuSet.add(r.sku));
+      monthMap.set(data.month, existing);
+    }
+
+    const comparisons: any[] = [];
+    for (const [month, v] of monthMap) {
       comparisons.push({
-        month: data.month,
-        sales: Math.round(sales * 100) / 100,
-        income: reconciliation.skuNetIncome,
-        margin: sales !== 0 ? Math.round((reconciliation.skuNetIncome / sales) * 10000) / 100 : 0,
-        skuCount: skuRows.length,
-        orderCount: orders.length - refunds.length,
+        month,
+        sales: Math.round(v.sales * 100) / 100,
+        income: Math.round(v.income * 100) / 100,
+        margin: v.sales !== 0 ? Math.round((v.income / v.sales) * 10000) / 100 : 0,
+        skuCount: v.skuSet.size,
+        orderCount: v.orders - v.refunds,
       });
     }
 
@@ -90,7 +107,7 @@ export default function HistoryPage() {
           </SelectTrigger>
           <SelectContent>
             {stores.map(s => (
-              <SelectItem key={s} value={s}>{s}</SelectItem>
+              <SelectItem key={s} value={s}>{s === '全部' ? '全部店铺' : s}</SelectItem>
             ))}
           </SelectContent>
         </Select>

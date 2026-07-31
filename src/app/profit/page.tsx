@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -13,7 +13,8 @@ import {
 } from '@/components/ui/select';
 import { getAllMonthlyData, getSharedFees } from '@/lib/idb';
 import { calculateSKUProfit } from '@/lib/profit-calculator';
-import { MonthlyData, SharedFee, SKUProfitRow, Reconciliation } from '@/lib/types';
+import { MonthlyData, SharedFee, SKUProfitRow, Reconciliation, ALL_STORES } from '@/lib/types';
+import { ShopFilter } from '@/components/layout/shop-filter';
 import { Search, ArrowUpDown, Download } from 'lucide-react';
 import * as XLSX from 'xlsx';
 
@@ -87,7 +88,7 @@ export default function ProfitPage() {
       setMonthlyDataList(data);
       if (data.length > 0) {
         setSelectedMonth(data[0].month);
-        setSelectedStore(data[0].storeName);
+        setSelectedStore('全部');
       }
     } catch (err) {
       console.error('加载数据失败:', err);
@@ -100,25 +101,59 @@ export default function ProfitPage() {
     if (selectedMonth && selectedStore) {
       calculateProfit();
     }
-  }, [selectedMonth, selectedStore]);
+  }, [selectedMonth, selectedStore, monthlyDataList]);
 
   async function calculateProfit() {
-    const data = monthlyDataList.find(
-      d => d.month === selectedMonth && d.storeName === selectedStore
-    );
-    if (!data) return;
+    if (selectedStore === '全部') {
+      const storeData = stores.filter(s => s !== '全部');
+      const allRows: SKUProfitRow[] = [];
+      let allRecon: Reconciliation | null = null;
+      let allFees: SharedFee[] = [];
 
-    const fees = await getSharedFees(selectedMonth, selectedStore);
-    setSharedFees(fees);
+      for (const store of storeData) {
+        const data = monthlyDataList.find(
+          d => d.month === selectedMonth && d.storeName === store
+        );
+        if (!data) continue;
+        const fees = await getSharedFees(selectedMonth, store);
+        const { skuRows: rows, reconciliation: recon } = calculateSKUProfit(
+          data.transactions,
+          fees,
+          selectedMonth,
+          store
+        );
+        allRows.push(...rows);
+        allFees = [...allFees, ...fees];
+        if (recon) {
+          if (!allRecon) {
+            allRecon = { ...recon, storeName: '全部' };
+          } else {
+            allRecon.skuNetIncome += recon.skuNetIncome;
+            allRecon.totalNetIncome += recon.totalNetIncome;
+          }
+        }
+      }
+      setSkuRows(allRows);
+      setSharedFees(allFees);
+      setReconciliation(allRecon);
+    } else {
+      const data = monthlyDataList.find(
+        d => d.month === selectedMonth && d.storeName === selectedStore
+      );
+      if (!data) return;
 
-    const { skuRows: rows, reconciliation: recon } = calculateSKUProfit(
-      data.transactions,
-      fees,
-      selectedMonth,
-      selectedStore
-    );
-    setSkuRows(rows);
-    setReconciliation(recon);
+      const fees = await getSharedFees(selectedMonth, selectedStore);
+      setSharedFees(fees);
+
+      const { skuRows: rows, reconciliation: recon } = calculateSKUProfit(
+        data.transactions,
+        fees,
+        selectedMonth,
+        selectedStore
+      );
+      setSkuRows(rows);
+      setReconciliation(recon);
+    }
   }
 
   const filteredRows = skuRows
@@ -272,6 +307,7 @@ export default function ProfitPage() {
                   <SelectValue placeholder="选择店铺" />
                 </SelectTrigger>
                 <SelectContent>
+                  <SelectItem value="全部">全部店铺</SelectItem>
                   {stores.map(s => (
                     <SelectItem key={s} value={s}>{s}</SelectItem>
                   ))}

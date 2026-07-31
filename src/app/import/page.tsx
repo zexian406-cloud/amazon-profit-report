@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -14,10 +14,11 @@ import { calculateSKUProfitWithReports } from '@/lib/profit-calculator';
 import { saveMonthlyData, saveSharedFees, saveProfitReport } from '@/lib/idb';
 import {
   ParseResult, SKUProfitRow, SharedFee, Reconciliation,
-  ReportType, REPORT_TYPE_LABELS, UploadedReport,
+  ReportType, REPORT_TYPE_LABELS, UploadedReport, SHOPS,
   SettlementReport, StorageFeeItem, AdReportItem, ReturnReportItem,
   ProductCostItem, DeliveryFeeItem,
 } from '@/lib/types';
+import { ShopFilter } from '@/components/layout/shop-filter';
 import {
   parseReportByType, detectReportType, extractSharedFeesFromReports,
   getReportTypeColor, getReportTypeIcon,
@@ -51,6 +52,7 @@ function ReportTypeIcon({ type, className }: { type: ReportType; className?: str
 export default function ImportPage() {
   // 报表类型选择
   const [reportType, setReportType] = useState<ReportType | 'auto'>('transaction');
+  const [uploadStore, setUploadStore] = useState('一店');
 
   // 已上传报表列表
   const [uploadedReports, setUploadedReports] = useState<UploadedReport[]>([]);
@@ -141,6 +143,9 @@ export default function ImportPage() {
       if (actualType === 'transaction') {
         // 交易明细-使用原有解析逻辑
         const result = await parseExcel(file);
+        const store = uploadStore || result.storeName || '一店';
+        result.storeName = store;
+        result.transactions.forEach(t => { t.storeName = store; });
         setTransactionResult(result);
         setPreviewData(result.transactions.slice(0, 50).map(t => t.rawRow));
         setPreviewHeaders(Object.keys(result.transactions[0]?.rawRow || {}));
@@ -151,7 +156,7 @@ export default function ImportPage() {
           fileName: file.name,
           reportType: 'transaction',
           month: result.month,
-          storeName: result.storeName,
+          storeName: store,
           uploadTime: new Date().toISOString(),
           rowCount: result.transactions.length,
           status: 'parsed',
@@ -232,7 +237,7 @@ export default function ImportPage() {
     } finally {
       setParsing(false);
     }
-  }, [reportType, currentReportType]);
+  }, [reportType, currentReportType, uploadStore]);
 
   // 移除已上传报表
   function removeReport(id: string) {
@@ -452,6 +457,33 @@ export default function ImportPage() {
         </p>
       </div>
 
+      {/* 店铺数据概览 */}
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base flex items-center gap-2">
+            <Warehouse className="h-4 w-4" />
+            店铺数据概览
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-3 gap-4">
+            {['一店', '二店', '三店'].map((store, idx) => {
+              const storeReports = uploadedReports.filter(r => r.storeName === store);
+              const storeMonths = new Set(storeReports.map(r => r.month));
+              return (
+                <div key={store} className="p-3 rounded-lg border bg-card text-center">
+                  <p className="text-sm font-medium" style={{ color: ['#1e3a5f', '#3b82f6', '#10b981'][idx] }}>
+                    {store}
+                  </p>
+                  <p className="text-2xl font-bold mt-1">{storeReports.length}</p>
+                  <p className="text-xs text-muted-foreground">报表 · {storeMonths.size}个月</p>
+                </div>
+              );
+            })}
+          </div>
+        </CardContent>
+      </Card>
+
       {/* 报表类型选择器 */}
       <Card>
         <CardHeader className="pb-3">
@@ -500,7 +532,16 @@ export default function ImportPage() {
             支持亚马逊后台导出的各类报表 (.xlsx, .xls, .csv)
           </CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="space-y-4">
+          <div className="flex items-center gap-2">
+            <span className="text-sm font-medium text-muted-foreground">选择店铺：</span>
+            <ShopFilter
+              stores={['一店', '二店', '三店']}
+              value={uploadStore}
+              onChange={setUploadStore}
+              mode="select"
+            />
+          </div>
           <div
             className="border-2 border-dashed rounded-lg p-8 text-center hover:border-primary/50 transition-colors cursor-pointer"
             onDrop={handleFileDrop}
@@ -575,6 +616,9 @@ export default function ImportPage() {
                           className="text-xs"
                         >
                           {report.status === 'merged' ? '已合并' : '已解析'}
+                        </Badge>
+                        <Badge variant="outline" className="text-xs" style={{ borderColor: '#3b82f6', color: '#3b82f6' }}>
+                          {report.storeName || '一店'}
                         </Badge>
                       </div>
                       <p className="text-xs text-muted-foreground mt-0.5">
