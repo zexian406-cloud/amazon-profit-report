@@ -618,6 +618,54 @@ export function parseDeliveryFeeReport(file: File): Promise<{
   });
 }
 
+// ====== 负责人映射解析 ======
+
+export function parseManagerMappingReport(file: File): Promise<{
+  managerMappings: { sku: string; productName: string; manager: string; storeName: string }[];
+  uploadedReports: UploadedReport[];
+}> {
+  return new Promise(async (resolve, reject) => {
+    try {
+      const { jsonData } = await readExcelFile(file);
+
+      const managerMappings: { sku: string; productName: string; manager: string; storeName: string }[] = [];
+      let storeName = '一店';
+      const monthSet = new Set<string>();
+
+      for (const row of jsonData) {
+        const sku = row['sku'] || row['SKU'] || '';
+        const productName = row['productName'] || row['品名'] || row['产品'] || row['产品名称'] || '';
+        const manager = row['manager'] || row['负责人'] || row['责任人'] || '';
+        const dateStr = row['date'] || '';
+        const month = dateStr ? extractMonthFromDate(dateStr) : extractMonthFromDate(new Date().toISOString());
+        monthSet.add(month);
+
+        if (row['store']) storeName = row['store'];
+        if (!sku) continue;
+
+        managerMappings.push({ sku, productName, manager, storeName });
+      }
+
+      const primaryMonth = Array.from(monthSet)[0] || extractMonthFromDate(new Date().toISOString());
+
+      const uploadedReports: UploadedReport[] = [{
+        id: `managerMapping-${Date.now()}`,
+        fileName: file.name,
+        reportType: 'managerMapping',
+        month: primaryMonth,
+        storeName,
+        uploadTime: new Date().toISOString(),
+        rowCount: jsonData.length,
+        status: 'parsed',
+      }];
+
+      resolve({ managerMappings, uploadedReports });
+    } catch (error) {
+      reject(error);
+    }
+  });
+}
+
 // ====== 通用多报表解析入口 ======
 
 export async function parseReportByType(
@@ -657,6 +705,10 @@ export async function parseReportByType(
     case 'deliveryFee': {
       const result = await parseDeliveryFeeReport(file);
       return { reportType, deliveryFeeItems: result.deliveryFeeItems, uploadedReports: result.uploadedReports };
+    }
+    case 'managerMapping': {
+      const result = await parseManagerMappingReport(file);
+      return { reportType, uploadedReports: result.uploadedReports };
     }
     default:
       throw new Error(`不支持的报表类型: ${reportType}`);
@@ -743,6 +795,7 @@ export function getReportTypeColor(type: ReportType): string {
     return: '#10b981',
     productCost: '#06b6d4',
     deliveryFee: '#f97316',
+    managerMapping: '#ec4899',
   };
   return colors[type] || '#6b7280';
 }
@@ -757,6 +810,7 @@ export function getReportTypeIcon(type: ReportType): string {
     return: 'Undo2',
     productCost: 'DollarSign',
     deliveryFee: 'Truck',
+    managerMapping: 'User',
   };
   return icons[type] || 'File';
 }

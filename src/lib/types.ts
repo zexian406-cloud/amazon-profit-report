@@ -25,7 +25,8 @@ export type ReportType =
   | 'advertising'    // 广告报告
   | 'return'         // 退货报告
   | 'productCost'    // 产品成本/FOB
-  | 'deliveryFee';   // 尾程运费
+  | 'deliveryFee'    // 尾程运费
+  | 'managerMapping'; // 负责人映射
 
 // 报表类型中文名
 export const REPORT_TYPE_LABELS: Record<ReportType, string> = {
@@ -36,6 +37,7 @@ export const REPORT_TYPE_LABELS: Record<ReportType, string> = {
   return: '退货报告',
   productCost: '产品成本/FOB',
   deliveryFee: '尾程运费',
+  managerMapping: '负责人映射',
 };
 
 // 报表类型检测特征
@@ -252,6 +254,15 @@ export interface DeliveryFeeItem {
   deliveryDate: string;
   month: string;
   storeName: string;
+}
+
+export interface ManagerMapping {
+  id?: number;
+  sku: string;
+  productName: string;
+  manager: string;
+  storeName: string;
+  updatedAt: string;
 }
 
 export interface UploadedReport {

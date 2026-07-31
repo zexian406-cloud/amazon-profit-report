@@ -125,7 +125,8 @@ export default function ProfitPage() {
           data.transactions,
           fees,
           selectedMonth,
-          store
+          store,
+          shops.find(s => s.name === store)?.defaultManager || ''
         );
         allRows.push(...rows);
         allFees = [...allFees, ...fees];

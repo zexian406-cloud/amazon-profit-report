@@ -1,16 +1,17 @@
-import { Transaction, SKUProfitRow, SharedFee, Reconciliation, StorageFeeItem, AdReportItem, ReturnReportItem, SettlementReport, ProductCostItem, DeliveryFeeItem } from './types';
+import { Transaction, SKUProfitRow, SharedFee, Reconciliation, StorageFeeItem, AdReportItem, ReturnReportItem, SettlementReport, ProductCostItem, DeliveryFeeItem, ManagerMapping } from './types';
 
 export function calculateSKUProfit(
   transactions: Transaction[],
   sharedFees: SharedFee[],
   month: string,
   storeName: string,
-  defaultManager: string = ''
+  defaultManager: string = '',
+  managerMappings?: ManagerMapping[],
 ): { skuRows: SKUProfitRow[]; reconciliation: Reconciliation } {
   return calculateSKUProfitWithReports(
     transactions, sharedFees, month, storeName,
     undefined, undefined, undefined, undefined, undefined, undefined,
-    defaultManager
+    defaultManager, managerMappings,
   );
 }
 
@@ -35,8 +36,15 @@ export function calculateSKUProfitWithReports(
   productCostItems?: ProductCostItem[],
   deliveryFeeItems?: DeliveryFeeItem[],
   defaultManager: string = '',
+  managerMappings?: ManagerMapping[],
 ): { skuRows: SKUProfitRow[]; reconciliation: Reconciliation } {
-  // 按SKU分组
+  // 构建SKU→负责人映射
+  const managerMap = new Map<string, string>();
+  if (managerMappings) {
+    for (const m of managerMappings) {
+      if (m.sku) managerMap.set(m.sku.trim().toUpperCase(), m.manager);
+    }
+  }
   const skuGroups = new Map<string, Transaction[]>();
   for (const t of transactions) {
     const key = `${t.sku}|${t.asin}`;
@@ -392,7 +400,7 @@ export function calculateSKUProfitWithReports(
       fakeOrderFee,
       netIncome,
       profitMargin,
-      manager: defaultManager || '',
+      manager: managerMap.get(sku.toUpperCase()) || defaultManager || '',
       dataSources: {
         storageFee: storageFeeSource,
         adFee: adFeeSource,

@@ -1,7 +1,7 @@
-import { MonthlyData, SharedFee, StoreConfig, SKUProfitRow, HistoryMonth, Shop, DEFAULT_SHOP_NAMES, ExchangeRate } from './types';
+import { MonthlyData, SharedFee, StoreConfig, SKUProfitRow, HistoryMonth, Shop, DEFAULT_SHOP_NAMES, ExchangeRate, ManagerMapping } from './types';
 
 const DB_NAME = 'amazon_profit_db';
-const DB_VERSION = 3;
+const DB_VERSION = 4;
 
 function openDB(): Promise<IDBDatabase> {
   return new Promise((resolve, reject) => {
@@ -25,6 +25,9 @@ function openDB(): Promise<IDBDatabase> {
       }
       if (!db.objectStoreNames.contains('exchangeRates')) {
         db.createObjectStore('exchangeRates', { keyPath: 'id', autoIncrement: true });
+      }
+      if (!db.objectStoreNames.contains('managerMappings')) {
+        db.createObjectStore('managerMappings', { keyPath: 'id', autoIncrement: true });
       }
     };
     request.onsuccess = () => resolve(request.result);
@@ -69,6 +72,36 @@ export async function deleteMonthlyData(id: number): Promise<void> {
     const tx = db.transaction('monthlyData', 'readwrite');
     const store = tx.objectStore('monthlyData');
     store.delete(id);
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error);
+  });
+}
+
+// ====== 负责人映射 CRUD ======
+
+export async function getManagerMappings(): Promise<ManagerMapping[]> {
+  const db = await openDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction('managerMappings', 'readonly');
+    const req = tx.objectStore('managerMappings').getAll();
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error);
+  });
+}
+
+export async function saveManagerMappings(mappings: Omit<ManagerMapping, 'id'>[]): Promise<void> {
+  const db = await openDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction('managerMappings', 'readwrite');
+    const store = tx.objectStore('managerMappings');
+    // 清空旧数据
+    const clearReq = store.clear();
+    clearReq.onsuccess = () => {
+      // 批量插入新数据
+      for (const mapping of mappings) {
+        store.add({ ...mapping });
+      }
+    };
     tx.oncomplete = () => resolve();
     tx.onerror = () => reject(tx.error);
   });

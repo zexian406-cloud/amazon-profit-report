@@ -7,16 +7,16 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import {
   Upload, FileSpreadsheet, AlertCircle, CheckCircle2, Loader2, Download,
-  FileCheck, BarChart3, Undo2, Warehouse, File, Trash2, Layers, DollarSign, Truck,
+  FileCheck, BarChart3, Undo2, Warehouse, File, Trash2, Layers, DollarSign, Truck, User,
 } from 'lucide-react';
 import { parseExcel } from '@/lib/excel-parser';
 import { calculateSKUProfitWithReports } from '@/lib/profit-calculator';
-import { saveMonthlyData, saveSharedFees, saveProfitReport } from '@/lib/idb';
+import { saveMonthlyData, saveSharedFees, saveProfitReport, saveManagerMappings } from '@/lib/idb';
 import {
   ParseResult, SKUProfitRow, SharedFee, Reconciliation,
   ReportType, REPORT_TYPE_LABELS, UploadedReport,
   SettlementReport, StorageFeeItem, AdReportItem, ReturnReportItem,
-  ProductCostItem, DeliveryFeeItem, getShopColor,
+  ProductCostItem, DeliveryFeeItem, ManagerMapping, getShopColor,
 } from '@/lib/types';
 import { useShops } from '@/hooks/use-shops';
 import { ShopFilter } from '@/components/layout/shop-filter';
@@ -34,6 +34,7 @@ const REPORT_TYPES: { type: ReportType; icon: typeof File }[] = [
   { type: 'return', icon: Undo2 },
   { type: 'productCost', icon: DollarSign },
   { type: 'deliveryFee', icon: Truck },
+  { type: 'managerMapping', icon: User },
 ];
 
 function ReportTypeIcon({ type, className }: { type: ReportType; className?: string }) {
@@ -45,6 +46,7 @@ function ReportTypeIcon({ type, className }: { type: ReportType; className?: str
     return: Undo2,
     productCost: DollarSign,
     deliveryFee: Truck,
+    managerMapping: User,
   };
   const Icon = iconMap[type] || File;
   return <Icon className={className || 'h-4 w-4'} />;
@@ -69,6 +71,7 @@ export default function ImportPage() {
   const [returnReportItems, setReturnReportItems] = useState<ReturnReportItem[] | undefined>();
   const [productCostItems, setProductCostItems] = useState<ProductCostItem[] | undefined>();
   const [deliveryFeeItems, setDeliveryFeeItems] = useState<DeliveryFeeItem[] | undefined>();
+  const [managerMappings, setManagerMappings] = useState<ManagerMapping[] | undefined>();
 
   // 解析状态
   const [parsing, setParsing] = useState(false);
@@ -172,6 +175,29 @@ export default function ImportPage() {
         };
         setUploadedReports(prev => [...prev.filter(r => r.reportType !== 'transaction'), newReport]);
         setActiveTab('preview');
+      } else if (actualType === 'managerMapping') {
+        // 负责人映射 - 使用独立解析
+        const { parseManagerMappingReport } = await import('@/lib/report-parser');
+        const mappingResult = await parseManagerMappingReport(file);
+        const store = uploadStore || '一店';
+        const mappings = mappingResult.managerMappings.map(m => ({ sku: m.sku, productName: m.productName, manager: m.manager, storeName: m.storeName, updatedAt: new Date().toISOString() }));
+        setManagerMappings(mappings);
+        setPreviewData(mappingResult.managerMappings.map(m => ({
+          SKU: m.sku,
+          品名: m.productName,
+          负责人: m.manager,
+        })));
+        setPreviewHeaders(['SKU', '品名', '负责人']);
+        // 保存到 IndexedDB
+        await saveManagerMappings(mappingResult.managerMappings.map(m => ({
+          sku: m.sku,
+          productName: m.productName,
+          manager: m.manager,
+          storeName: store,
+          updatedAt: new Date().toISOString(),
+        })));
+        setUploadedReports(prev => [...prev, ...mappingResult.uploadedReports]);
+        setActiveTab('reports');
       } else {
         // 其他报表类型
         const parsed = await parseReportByType(file, actualType);
@@ -262,6 +288,7 @@ export default function ImportPage() {
     if (report.reportType === 'return') setReturnReportItems(undefined);
     if (report.reportType === 'productCost') setProductCostItems(undefined);
     if (report.reportType === 'deliveryFee') setDeliveryFeeItems(undefined);
+    if (report.reportType === 'managerMapping') setManagerMappings(undefined);
   }
 
   // 合并所有报表数据并计算利润
@@ -302,6 +329,7 @@ export default function ImportPage() {
         productCostItems,
         deliveryFeeItems,
         defaultManager,
+        managerMappings,
       );
 
       setSkuRows(rows);
