@@ -117,7 +117,7 @@ export default function SettingsPage() {
       </div>
 
       {/* 添加新店铺 */}
-      <Card>
+      <Card className="shadow-sm border-0">
         <CardHeader>
           <CardTitle className="text-base">添加新店铺</CardTitle>
           <CardDescription>输入店铺名称、选择货币单位和默认负责人</CardDescription>
@@ -147,7 +147,7 @@ export default function SettingsPage() {
               onChange={(e) => setNewShopManager(e.target.value)}
               className="max-w-[180px]"
             />
-            <Button onClick={handleAdd} className="gap-2">
+            <Button onClick={handleAdd} className="gap-2 bg-emerald-600 hover:bg-emerald-700">
               <Plus className="h-4 w-4" />
               添加
             </Button>
@@ -156,7 +156,7 @@ export default function SettingsPage() {
       </Card>
 
       {/* 店铺列表 */}
-      <Card>
+      <Card className="shadow-sm border-0">
         <CardHeader>
           <CardTitle className="text-base">当前店铺列表</CardTitle>
           <CardDescription>共 {shops.length} 个店铺，可编辑名称、货币单位和默认负责人</CardDescription>
@@ -166,7 +166,7 @@ export default function SettingsPage() {
             {shops.map((shop) => (
               <div
                 key={shop.id}
-                className="p-4 rounded-lg border bg-card hover:bg-accent/5 transition-colors"
+                className="p-4 rounded-lg border bg-card hover:bg-muted/50 transition-colors"
               >
                 <div className="flex items-center justify-between mb-3">
                   <div className="flex items-center gap-3">
@@ -186,7 +186,7 @@ export default function SettingsPage() {
                             className="h-8 w-40"
                             autoFocus
                           />
-                          <Button size="sm" variant="default" onClick={() => handleRename(shop.id)}>确定</Button>
+                          <Button size="sm" variant="default" className="bg-emerald-600 hover:bg-emerald-700" onClick={() => handleRename(shop.id)}>确定</Button>
                           <Button size="sm" variant="ghost" onClick={() => { setEditingId(null); setEditingName(''); }}>取消</Button>
                         </div>
                       ) : (
@@ -213,21 +213,21 @@ export default function SettingsPage() {
                           <Trash2 className="h-4 w-4 text-destructive" />
                         </Button>
                       </DialogTrigger>
-                      <DialogContent>
+                      <DialogContent className="sm:max-w-md">
                         <DialogHeader>
-                          <DialogTitle className="flex items-center gap-2">
+                          <DialogTitle className="flex items-center gap-2 text-lg">
                             <AlertTriangle className="h-5 w-5 text-destructive" />
                             确认删除店铺
                           </DialogTitle>
                         </DialogHeader>
-                        <p className="text-sm text-muted-foreground">
+                        <p className="text-sm text-muted-foreground leading-relaxed">
                           删除「{shop.name}」将同时清除该店铺的所有导入数据。此操作不可撤销，请确认。
                         </p>
-                        <DialogFooter>
+                        <DialogFooter className="gap-2">
                           <DialogClose asChild>
-                            <Button variant="outline">取消</Button>
+                            <Button variant="outline" className="rounded-lg">取消</Button>
                           </DialogClose>
-                          <Button variant="destructive" onClick={() => handleDelete(shop.id)}>
+                          <Button variant="destructive" onClick={() => handleDelete(shop.id)} className="rounded-lg">
                             确认删除
                           </Button>
                         </DialogFooter>
@@ -278,7 +278,7 @@ export default function SettingsPage() {
       </Card>
 
       {/* 海外仓费用类型管理 */}
-      <Card>
+      <Card className="shadow-sm border-0">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Package className="h-5 w-5" />
@@ -311,7 +311,7 @@ export default function SettingsPage() {
                 <div className="flex items-center gap-2">
                   {editingProviderId === provider.id ? (
                     <>
-                      <Button size="sm" onClick={() => handleRenameProvider(provider.id!)}>保存</Button>
+                      <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700" onClick={() => handleRenameProvider(provider.id!)}>保存</Button>
                       <Button size="sm" variant="ghost" onClick={() => setEditingProviderId(null)}>取消</Button>
                     </>
                   ) : (
@@ -345,7 +345,7 @@ export default function SettingsPage() {
                   if (e.key === 'Enter') handleAddProvider();
                 }}
               />
-              <Button onClick={handleAddProvider} size="sm">添加</Button>
+              <Button onClick={handleAddProvider} size="sm" className="bg-emerald-600 hover:bg-emerald-700">添加</Button>
             </div>
           </div>
         </CardContent>
@@ -353,16 +353,16 @@ export default function SettingsPage() {
 
       {/* 删除海外仓确认弹窗 */}
       <Dialog open={deleteProviderConfirm !== null} onOpenChange={(open) => !open && setDeleteProviderConfirm(null)}>
-        <DialogContent>
+        <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>确认删除</DialogTitle>
-            <DialogDescription>
+            <DialogTitle className="text-lg">确认删除</DialogTitle>
+            <DialogDescription className="leading-relaxed">
               删除后，利润表中将不再显示该海外仓的尾程运费列。已导入的运费数据不受影响，但不会在利润表中展示。
             </DialogDescription>
           </DialogHeader>
-          <DialogFooter>
+          <DialogFooter className="gap-2">
             <DialogClose asChild>
-              <Button variant="outline">取消</Button>
+              <Button variant="outline" className="rounded-lg">取消</Button>
             </DialogClose>
             <Button
               variant="destructive"
@@ -371,6 +371,7 @@ export default function SettingsPage() {
                   handleDeleteProvider(deleteProviderConfirm!);
                 }
               }}
+              className="rounded-lg"
             >
               确认删除
             </Button>

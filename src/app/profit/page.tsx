@@ -343,7 +343,7 @@ export default function ProfitPage() {
       </div>
 
       {/* Filters */}
-      <Card>
+      <Card className="shadow-sm border-0">
         <CardContent className="pt-6">
           <div className="flex flex-wrap gap-4 items-end">
             <div className="space-y-1">
@@ -405,48 +405,65 @@ export default function ProfitPage() {
       {/* Summary */}
       {reconciliation && (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <div className="bg-blue-50 rounded-lg p-3">
-            <p className="text-xs text-blue-600">SKU总数</p>
-            <p className="text-xl font-bold text-blue-700">{skuRows.length}</p>
-          </div>
-          <div className="bg-green-50 rounded-lg p-3">
-            <p className="text-xs text-green-600">净销售额</p>
-            <p className="text-xl font-bold text-green-700">
-              ${rowSums['netSales']?.toFixed(2) || '0.00'}
-            </p>
-          </div>
-          <div className="bg-indigo-50 rounded-lg p-3">
-            <p className="text-xs text-indigo-600">净收入</p>
-            <p className="text-xl font-bold text-indigo-700">
-              ${reconciliation.skuNetIncome.toFixed(2)}
-            </p>
-          </div>
-          <div className="bg-purple-50 rounded-lg p-3">
-            <p className="text-xs text-purple-600">平均利润率</p>
-            <p className="text-xl font-bold text-purple-700">
-              {skuRows.length > 0 ? (skuRows.reduce((s, r) => s + r.profitMargin, 0) / skuRows.length * 100).toFixed(1) : 0}%
-            </p>
-          </div>
+          <Card className="shadow-sm border-0">
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground">SKU总数</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold tabular-nums">{skuRows.length}</div>
+            </CardContent>
+          </Card>
+          <Card className="shadow-sm border-0">
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground">净销售额</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold tabular-nums">
+                ${rowSums['netSales']?.toFixed(2) || '0.00'}
+              </div>
+            </CardContent>
+          </Card>
+          <Card className="shadow-sm border-0">
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground">净收入</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className={`text-2xl font-bold tabular-nums ${reconciliation.skuNetIncome >= 0 ? 'text-emerald-500' : 'text-red-500'}`}>
+                ${reconciliation.skuNetIncome.toFixed(2)}
+              </div>
+            </CardContent>
+          </Card>
+          <Card className="shadow-sm border-0">
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground">平均利润率</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className={`text-2xl font-bold tabular-nums ${skuRows.length > 0 && skuRows.reduce((s, r) => s + r.profitMargin, 0) / skuRows.length >= 0 ? 'text-emerald-500' : 'text-red-500'}`}>
+                {skuRows.length > 0 ? (skuRows.reduce((s, r) => s + r.profitMargin, 0) / skuRows.length * 100).toFixed(1) : 0}%
+              </div>
+            </CardContent>
+          </Card>
         </div>
       )}
 
       {/* Table */}
-      <Card>
+      <Card className="shadow-sm border-0">
         <CardContent className="p-0">
-          <div className="overflow-x-auto max-h-[700px] overflow-y-auto">
+          <div className="overflow-x-auto rounded-lg border border-border/50">
+            <div className="max-h-[700px] overflow-y-auto">
             <table className="w-full text-sm">
-              <thead className="sticky top-0 bg-white z-10">
-                <tr className="border-b">
-                  <th className="text-left py-3 px-2 font-medium whitespace-nowrap min-w-[100px] sticky left-0 bg-white z-20">SKU</th>
+              <thead className="sticky top-0 z-10">
+                <tr className="bg-muted/50 border-b border-border/50">
+                  <th className="text-left py-3 px-3 font-medium text-muted-foreground text-xs uppercase tracking-wider whitespace-nowrap min-w-[100px] sticky left-0 bg-muted/50 z-20">SKU</th>
                   {COLUMNS.slice(1).map((col) => (
                     <th
                       key={col.key}
-                      className={`text-right py-3 px-2 font-medium cursor-pointer hover:bg-muted/50 whitespace-nowrap ${col.bold ? 'text-blue-700' : ''}`}
+                      className={`text-right py-3 px-3 font-medium text-muted-foreground text-xs uppercase tracking-wider cursor-pointer hover:bg-muted/30 whitespace-nowrap ${col.bold ? 'text-primary' : ''}`}
                       onClick={() => toggleSort(col.key)}
                     >
                       <div className="flex items-center justify-end gap-1">
                         <span>{col.label}</span>
-                        <ArrowUpDown className="h-3 w-3 text-muted-foreground" />
+                        <ArrowUpDown className="h-3 w-3 text-muted-foreground/60" />
                       </div>
                     </th>
                   ))}
@@ -454,19 +471,19 @@ export default function ProfitPage() {
               </thead>
               <tbody>
                 {filteredRows.map((row, i) => (
-                  <tr key={i} className="border-b hover:bg-muted/50">
-                    <td className="py-2 px-2 text-left font-medium max-w-[120px] truncate sticky left-0 bg-white">
+                  <tr key={i} className="border-b border-border/30 hover:bg-muted/20 transition-colors">
+                    <td className="py-2.5 px-3 text-left font-medium text-sm max-w-[120px] truncate sticky left-0 bg-card">
                       {row.sku}
                     </td>
                     {COLUMNS.slice(1).map((col) => {
                       const val = (row as any)[col.key];
                       if (col.key === 'profitMargin') {
                         return (
-                          <td key={col.key} className="py-2 px-2 text-right">
+                          <td key={col.key} className="py-2.5 px-3 text-right tabular-nums">
                             <span className={`inline-block px-2 py-0.5 rounded text-xs font-medium ${
-                              val >= 0.2 ? 'bg-green-100 text-green-700' :
-                              val >= 0 ? 'bg-yellow-100 text-yellow-700' :
-                              'bg-red-100 text-red-700'
+                              val >= 0.2 ? 'bg-emerald-50 text-emerald-600' :
+                              val >= 0 ? 'bg-amber-50 text-amber-600' :
+                              'bg-red-50 text-red-600'
                             }`}>
                               {(val * 100).toFixed(1)}%
                             </span>
@@ -475,13 +492,20 @@ export default function ProfitPage() {
                       }
                       if (col.key === 'netIncome') {
                         return (
-                          <td key={col.key} className={`py-2 px-2 text-right font-semibold ${val >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                          <td key={col.key} className={`py-2.5 px-3 text-right tabular-nums font-semibold ${val >= 0 ? 'text-emerald-500' : 'text-red-500'}`}>
+                            {formatVal(row, col)}
+                          </td>
+                        );
+                      }
+                      if (col.key === 'netSales') {
+                        return (
+                          <td key={col.key} className="py-2.5 px-3 text-right tabular-nums font-semibold">
                             {formatVal(row, col)}
                           </td>
                         );
                       }
                       return (
-                        <td key={col.key} className={`py-2 px-2 text-right ${col.bold ? 'font-semibold' : ''}`}>
+                        <td key={col.key} className={`py-2.5 px-3 text-right tabular-nums ${col.bold ? 'font-semibold text-foreground' : 'text-muted-foreground/80'}`}>
                           {formatVal(row, col)}
                         </td>
                       );
@@ -490,13 +514,14 @@ export default function ProfitPage() {
                 ))}
                 {filteredRows.length === 0 && (
                   <tr>
-                    <td colSpan={COLUMNS.length} className="text-center py-8 text-muted-foreground">
+                    <td colSpan={COLUMNS.length} className="text-center py-12 text-muted-foreground">
                       {skuRows.length === 0 ? '暂无数据，请先导入数据' : '未找到匹配的SKU'}
                     </td>
                   </tr>
                 )}
               </tbody>
             </table>
+            </div>
           </div>
         </CardContent>
       </Card>

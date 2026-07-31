@@ -29,17 +29,17 @@ export default function RootLayout({
           <Providers>
           <AppSidebar />
           <SidebarInset>
-            <header className="flex h-14 shrink-0 items-center gap-2 border-b px-4 bg-white">
-              <SidebarTrigger className="-ml-1" />
-              <Separator orientation="vertical" className="mr-2 h-4" />
+            <header className="flex h-14 shrink-0 items-center gap-2 border-b border-border/50 bg-white/80 backdrop-blur-md px-4 sticky top-0 z-10">
+              <SidebarTrigger className="-ml-1 text-muted-foreground hover:text-foreground transition-colors" />
+              <Separator orientation="vertical" className="mr-2 h-5 bg-border/50" />
               <div className="flex items-center gap-2">
-                <span className="text-sm font-semibold text-primary">亚马逊利润报表系统</span>
+                <span className="text-sm font-medium text-foreground/80">亚马逊利润报表系统</span>
               </div>
               <div className="ml-auto flex items-center gap-2">
-                <span className="text-xs text-muted-foreground">数据本地存储 · 安全可靠</span>
+                <span className="text-xs text-muted-foreground/60">数据本地存储 · 安全可靠</span>
               </div>
             </header>
-            <main className="flex-1 p-6 bg-gray-50/50">
+            <main className="flex-1 p-6 md:p-8 bg-gradient-to-br from-background via-background to-muted/30">
               {children}
             </main>
           </SidebarInset>

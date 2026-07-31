@@ -207,7 +207,7 @@ export default function ExchangeRatesPage() {
       </div>
 
       {/* ===== 默认汇率 ===== */}
-      <Card>
+      <Card className="shadow-sm border-0">
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle className="text-base">默认汇率（兜底）</CardTitle>
           <Dialog open={rateDialogOpen} onOpenChange={(open) => { setRateDialogOpen(open); if (!open) resetRateForm(); }}>
@@ -259,29 +259,49 @@ export default function ExchangeRatesPage() {
               <p className="text-sm text-muted-foreground mt-1">点击上方按钮添加美元→人民币等汇率规则</p>
             </div>
           ) : (
-            <div className="space-y-2">
-              {rates.map((rate) => (
-                <div key={rate.id} className="flex items-center justify-between p-3 rounded-lg border hover:bg-muted/50">
-                  <div className="flex items-center gap-3">
-                    <span className="font-mono font-medium text-lg">{rate.fromCurrency}</span>
-                    <span className="text-muted-foreground">→</span>
-                    <span className="font-mono font-medium text-lg">{rate.toCurrency}</span>
-                    <span className="text-muted-foreground mx-2">=</span>
-                    <span className="font-mono text-lg font-bold">{rate.rate}</span>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <Button variant="ghost" size="sm" onClick={() => handleEditRate(rate)}><Pencil className="h-4 w-4" /></Button>
-                    <Button variant="ghost" size="sm" onClick={() => handleDeleteRate(rate.id!)}><Trash2 className="h-4 w-4 text-red-500" /></Button>
-                  </div>
-                </div>
-              ))}
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y">
+                <thead>
+                  <tr className="bg-muted/50">
+                    <th className="text-xs uppercase tracking-wider text-muted-foreground font-medium px-3 py-3 text-left">源货币</th>
+                    <th className="text-xs uppercase tracking-wider text-muted-foreground font-medium px-3 py-3 text-left"></th>
+                    <th className="text-xs uppercase tracking-wider text-muted-foreground font-medium px-3 py-3 text-left">目标货币</th>
+                    <th className="text-xs uppercase tracking-wider text-muted-foreground font-medium px-3 py-3 text-left">汇率值</th>
+                    <th className="text-xs uppercase tracking-wider text-muted-foreground font-medium px-3 py-3 text-right">操作</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y">
+                  {rates.map((rate) => (
+                    <tr key={rate.id} className="hover:bg-muted/20 transition-colors">
+                      <td className="px-3 py-3">
+                        <span className="font-mono font-medium">{rate.fromCurrency}</span>
+                      </td>
+                      <td className="px-3 py-3">
+                        <span className="text-muted-foreground">→</span>
+                      </td>
+                      <td className="px-3 py-3">
+                        <span className="font-mono font-medium">{rate.toCurrency}</span>
+                      </td>
+                      <td className="px-3 py-3">
+                        <span className="font-mono font-semibold tabular-nums">{rate.rate}</span>
+                      </td>
+                      <td className="px-3 py-3 text-right">
+                        <div className="flex items-center justify-end gap-1">
+                          <Button variant="ghost" size="sm" onClick={() => handleEditRate(rate)}><Pencil className="h-4 w-4" /></Button>
+                          <Button variant="ghost" size="sm" onClick={() => handleDeleteRate(rate.id!)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           )}
         </CardContent>
       </Card>
 
       {/* ===== 月度汇率 ===== */}
-      <Card>
+      <Card className="shadow-sm border-0">
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle className="text-base">月度汇率（按月份覆盖）</CardTitle>
           <Dialog open={overrideDialogOpen} onOpenChange={(open) => { setOverrideDialogOpen(open); if (!open) resetOverrideForm(); }}>
@@ -344,23 +364,46 @@ export default function ExchangeRatesPage() {
               <p className="text-sm text-muted-foreground mt-1">点击上方按钮为特定月份设置汇率</p>
             </div>
           ) : (
-            <div className="space-y-2">
-              {overrides.map((ov) => (
-                <div key={ov.id} className="flex items-center justify-between p-3 rounded-lg border hover:bg-muted/50">
-                  <div className="flex items-center gap-3">
-                    <span className="text-xs font-medium bg-primary/10 text-primary px-2 py-0.5 rounded">{ov.month}</span>
-                    <span className="font-mono font-medium">{ov.fromCurrency}</span>
-                    <span className="text-muted-foreground">→</span>
-                    <span className="font-mono font-medium">{ov.toCurrency}</span>
-                    <span className="text-muted-foreground mx-2">=</span>
-                    <span className="font-mono font-bold">{ov.rate}</span>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <Button variant="ghost" size="sm" onClick={() => handleEditOverride(ov)}><Pencil className="h-4 w-4" /></Button>
-                    <Button variant="ghost" size="sm" onClick={() => handleDeleteOverride(ov.id!)}><Trash2 className="h-4 w-4 text-red-500" /></Button>
-                  </div>
-                </div>
-              ))}
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y">
+                <thead>
+                  <tr className="bg-muted/50">
+                    <th className="text-xs uppercase tracking-wider text-muted-foreground font-medium px-3 py-3 text-left">月份</th>
+                    <th className="text-xs uppercase tracking-wider text-muted-foreground font-medium px-3 py-3 text-left">源货币</th>
+                    <th className="text-xs uppercase tracking-wider text-muted-foreground font-medium px-3 py-3 text-left"></th>
+                    <th className="text-xs uppercase tracking-wider text-muted-foreground font-medium px-3 py-3 text-left">目标货币</th>
+                    <th className="text-xs uppercase tracking-wider text-muted-foreground font-medium px-3 py-3 text-left">汇率值</th>
+                    <th className="text-xs uppercase tracking-wider text-muted-foreground font-medium px-3 py-3 text-right">操作</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y">
+                  {overrides.map((ov) => (
+                    <tr key={ov.id} className="hover:bg-muted/20 transition-colors">
+                      <td className="px-3 py-3">
+                        <span className="text-xs font-medium bg-primary/10 text-primary px-2 py-0.5 rounded">{ov.month}</span>
+                      </td>
+                      <td className="px-3 py-3">
+                        <span className="font-mono font-medium">{ov.fromCurrency}</span>
+                      </td>
+                      <td className="px-3 py-3">
+                        <span className="text-muted-foreground">→</span>
+                      </td>
+                      <td className="px-3 py-3">
+                        <span className="font-mono font-medium">{ov.toCurrency}</span>
+                      </td>
+                      <td className="px-3 py-3">
+                        <span className="font-mono font-semibold tabular-nums">{ov.rate}</span>
+                      </td>
+                      <td className="px-3 py-3 text-right">
+                        <div className="flex items-center justify-end gap-1">
+                          <Button variant="ghost" size="sm" onClick={() => handleEditOverride(ov)}><Pencil className="h-4 w-4" /></Button>
+                          <Button variant="ghost" size="sm" onClick={() => handleDeleteOverride(ov.id!)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           )}
         </CardContent>

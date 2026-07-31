@@ -11,7 +11,7 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid,
 } from 'recharts';
 
-const COLORS = ['#1e3a5f', '#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#14b8a6'];
+const COLORS = ['var(--color-chart-1)', 'var(--color-chart-2)', 'var(--color-chart-3)', 'var(--color-chart-4)', 'var(--color-chart-5)', 'var(--color-primary)', 'var(--color-secondary)', 'var(--color-accent)'];
 
 export default function FeesPage() {
   const [monthlyDataList, setMonthlyDataList] = useState<MonthlyData[]>([]);
@@ -139,7 +139,7 @@ export default function FeesPage() {
       </div>
 
       {skuRows.length === 0 ? (
-        <Card>
+        <Card className="shadow-sm border-0">
           <CardContent className="text-center py-12 text-muted-foreground">
             暂无数据，请先导入数据
           </CardContent>
@@ -148,7 +148,7 @@ export default function FeesPage() {
         <>
           {/* KPI Cards */}
           <div className="grid gap-4 md:grid-cols-4">
-            <Card>
+            <Card className="shadow-sm border-0">
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm font-medium">总费用</CardTitle>
               </CardHeader>
@@ -156,7 +156,7 @@ export default function FeesPage() {
                 <div className="text-2xl font-bold">${totalFee.toFixed(2)}</div>
               </CardContent>
             </Card>
-            <Card>
+            <Card className="shadow-sm border-0">
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm font-medium">最大费用项</CardTitle>
               </CardHeader>
@@ -166,7 +166,7 @@ export default function FeesPage() {
                 </div>
               </CardContent>
             </Card>
-            <Card>
+            <Card className="shadow-sm border-0">
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm font-medium">费用占比</CardTitle>
               </CardHeader>
@@ -178,7 +178,7 @@ export default function FeesPage() {
                 </div>
               </CardContent>
             </Card>
-            <Card>
+            <Card className="shadow-sm border-0">
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm font-medium">共享费用项</CardTitle>
               </CardHeader>
@@ -190,7 +190,7 @@ export default function FeesPage() {
 
           <div className="grid gap-4 md:grid-cols-2">
             {/* 费用结构饼图 */}
-            <Card>
+            <Card className="shadow-sm border-0">
               <CardHeader>
                 <CardTitle className="text-base">费用结构分布</CardTitle>
               </CardHeader>
@@ -219,7 +219,7 @@ export default function FeesPage() {
             </Card>
 
             {/* 费用对比柱状图 */}
-            <Card>
+            <Card className="shadow-sm border-0">
               <CardHeader>
                 <CardTitle className="text-base">各项费用明细</CardTitle>
               </CardHeader>
@@ -227,7 +227,7 @@ export default function FeesPage() {
                 <div className="h-80">
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart data={feeStructure} layout="vertical">
-                      <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                      <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                       <XAxis type="number" tick={{ fontSize: 12 }} />
                       <YAxis dataKey="name" type="category" tick={{ fontSize: 12 }} width={80} />
                       <Tooltip formatter={(value: number) => [`$${value.toFixed(2)}`, '金额']} />
@@ -244,7 +244,7 @@ export default function FeesPage() {
           </div>
 
           {/* 共享费用明细 */}
-          <Card>
+          <Card className="shadow-sm border-0">
             <CardHeader>
               <CardTitle className="text-base">共享费用明细</CardTitle>
             </CardHeader>
@@ -263,7 +263,7 @@ export default function FeesPage() {
                       {sharedFees.map((fee, i) => (
                         <tr key={i} className="border-b hover:bg-muted/50">
                           <td className="py-3 px-2">
-                            <span className="inline-block px-2 py-0.5 rounded text-xs font-medium bg-gray-100">
+                            <span className="inline-block px-2 py-0.5 rounded text-xs font-medium bg-muted">
                               {fee.category}
                             </span>
                           </td>
