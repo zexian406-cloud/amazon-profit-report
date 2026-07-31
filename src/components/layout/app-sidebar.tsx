@@ -50,11 +50,7 @@ export function AppSidebar() {
               <span className="text-[10px] text-white font-normal">Amazon Profit Calculator</span>
             </div>
           )}
-          {isCollapsed && (
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#007AFF]">
-              <span className="text-sm font-semibold text-white">P</span>
-            </div>
-          )}
+          
         </div>
       </SidebarHeader>
       <SidebarContent className="py-3">
