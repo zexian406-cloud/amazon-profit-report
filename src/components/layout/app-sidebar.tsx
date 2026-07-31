@@ -44,13 +44,15 @@ export function AppSidebar() {
     <Sidebar variant="sidebar" collapsible="icon">
       <SidebarHeader className="border-b border-[#2C2C2E] pb-4">
         <div className="flex items-center gap-3 px-3 pt-3">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#007AFF]">
-            <span className="text-sm font-semibold text-white">P</span>
-          </div>
           {!isCollapsed && (
             <div className="flex flex-col">
-              <span className="text-sm font-semibold tracking-tight text-white">利润报表</span>
-              <span className="text-[10px] text-white font-normal">Profit Report</span>
+              <span className="text-lg font-semibold tracking-tight text-white">亚马逊利润测算</span>
+              <span className="text-[10px] text-white font-normal">Amazon Profit Calculator</span>
+            </div>
+          )}
+          {isCollapsed && (
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#007AFF]">
+              <span className="text-sm font-semibold text-white">P</span>
             </div>
           )}
         </div>
