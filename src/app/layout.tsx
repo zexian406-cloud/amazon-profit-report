@@ -12,6 +12,14 @@ export const metadata: Metadata = {
     template: '%s | 利润报表',
   },
   description: '亚马逊月度利润报表自动生成工具',
+  icons: {
+    icon: '/icon.svg',
+    apple: '/icon.svg',
+  },
+  appleWebApp: {
+    title: '利润报表',
+    statusBarStyle: 'default',
+  },
 };
 
 export default function RootLayout({
