@@ -5,7 +5,6 @@ import { Transaction, TransactionType, ParseResult, SharedFee, FEE_CATEGORY_MAP 
 function detectTransactionType(row: Record<string, string>): TransactionType {
   const desc = (row['描述'] || row['Description'] || row['description'] || '').toLowerCase();
   const type = (row['类型'] || row['Type'] || row['type'] || '').toLowerCase();
-  const sku = row['SKU'] || row['sku'] || '';
   const amount = parseFloat(row['金额'] || row['Amount'] || row['amount'] || '0');
 
   // 按类型判断
@@ -19,28 +18,72 @@ function detectTransactionType(row: Record<string, string>): TransactionType {
     return 'Adjustment';
   }
 
-  // 按描述判断
-  if (desc.includes('fba') || desc.includes('fulfillment')) {
-    if (desc.includes('storage') || desc.includes('仓储')) return 'StorageFee';
+  // ====== 按描述逐层判断 ======
+
+  // 1. 仓储费
+  if (desc.includes('storage') || desc.includes('仓储')) {
+    if (desc.includes('aged') || desc.includes('超龄') || desc.includes('长期')) return 'StorageFee';
+    return 'StorageFee';
+  }
+
+  // 2. FBA相关
+  if (desc.includes('fba') || desc.includes('fulfillment') || desc.includes('配送')) {
     if (desc.includes('return') || desc.includes('退货处理')) return 'ReturnFee';
-    if (desc.includes('inbound') || desc.includes('入库')) return 'InboundFee';
-    if (desc.includes('removal') || desc.includes('移除')) return 'Other';
+    if (desc.includes('inbound') || desc.includes('入库') || desc.includes('配置费')) return 'InboundFee';
+    if (desc.includes('removal') || desc.includes('移除') || desc.includes('弃置')) return 'DisposalFee';
+    if (desc.includes('shipping') || desc.includes('配送费')) return 'FBAFee';
+    if (desc.includes('storage') || desc.includes('仓储')) return 'StorageFee';
     return 'FBAFee';
   }
+
+  // 3. 订阅费
   if (desc.includes('subscription') || desc.includes('订阅') || desc.includes('专业销售')) {
     return 'SubscriptionFee';
   }
-  if (desc.includes('ad') || desc.includes('广告') || desc.includes('推广')) {
+
+  // 4. 广告费
+  if (desc.includes('ad') || desc.includes('广告') || desc.includes('推广') || desc.includes('campaign')) {
     return 'AdFee';
   }
-  if (desc.includes('storage') || desc.includes('仓储')) {
-    return 'StorageFee';
+
+  // 5. Coupon费
+  if (desc.includes('coupon') || desc.includes('优惠券')) {
+    return 'CouponFee';
   }
+
+  // 6. 清算/清货
+  if (desc.includes('liquidation') || desc.includes('清算') || desc.includes('清货')) {
+    return 'LiquidationFee';
+  }
+
+  // 7. 库存赔偿
+  if (desc.includes('inventory') || desc.includes('赔偿') || desc.includes('compensation')) {
+    return 'InventoryCompensation';
+  }
+
+  // 8. SAFE-T赔付
+  if (desc.includes('safe-t') || desc.includes('safet') || desc.includes('赔付') || desc.includes('claims')) {
+    return 'SafeTClaim';
+  }
+
+  // 9. 弃置费
+  if (desc.includes('disposal') || desc.includes('弃置') || desc.includes('removal')) {
+    return 'DisposalFee';
+  }
+
+  // 10. 移除订单费
+  if (desc.includes('removal') || desc.includes('移除') || desc.includes('订单移除')) {
+    return 'RemovalFee';
+  }
+
+  // 11. Vine注册
   if (desc.includes('vine') || desc.includes('注册')) {
     return 'Other';
   }
+
+  // 12. 佣金/referral - 作为订单处理
   if (desc.includes('commission') || desc.includes('佣金') || desc.includes('referral')) {
-    return 'Order'; // 佣金作为订单的一部分
+    return 'Order';
   }
 
   return 'Other';

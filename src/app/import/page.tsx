@@ -322,74 +322,60 @@ export default function ImportPage() {
     }
   }
 
-  // 导出Excel
+  // 导出Excel - 41列模板
   function handleExport() {
     if (!transactionResult || skuRows.length === 0) return;
     const wb = XLSX.utils.book_new();
 
-    // Sheet1: SKU利润表（含数据来源标注）
+    // Sheet1: SKU利润表（41列模板）
     const ws1Data: (string | number)[][] = [
       [`${transactionResult.storeName} ${transactionResult.month} SKU利润表`],
       [],
-      ['SKU', 'ASIN', '订单量', '退款量', '净销售量',
-        '总销售额', '退款额', '净销售额',
-        '总佣金', '退款佣金', '净佣金',
-        '总FBA费', '退款FBA费', '净FBA费',
-        '仓储费', '仓储费来源', '广告费', '广告费来源',
-        '入库配置费', '退货处理费', '退货费来源',
-        '产品成本', '产品成本来源', '尾程运费', '尾程运费来源',
-        '订阅费(均摊)', '其他费用(均摊)',
-        '费用总计', 'SKU净收入', '利润率(%)'],
+      ['SKU', '订单量', '退款量',
+        '商品销售收入', '运费收入', '清算残值收入',
+        '退款-商品', '退款-运费', '退款-促销回冲', '促销折扣',
+        '▶ 净销售额',
+        '销售佣金', '退款-佣金退回', 'Coupon费', '▶ 净佣金',
+        'FBA配送费', '退款-FBA费退回', '退货处理费', '入库异常费', '▶ 净FBA费',
+        '月度仓储费', '超龄附加费', '▶ 仓储费合计',
+        '清算手续费', '库存赔偿', 'SAFE-T赔付', '退款-其他', '退货运费',
+        '弃置费', '订阅费(均摊)', '其他调整（均摊）', '入库配置费', '订单移除费',
+        '广告费', '头程', '成本', '乐歌尾程', '京东尾程', '刷单费',
+        '▶ SKU净收入', '利润率(%)', '负责人'],
     ];
     for (const row of skuRows) {
       ws1Data.push([
-        row.sku, row.asin,
-        row.orderQuantity, row.refundQuantity, row.orderQuantity - row.refundQuantity,
-        row.grossSales, row.refundAmount, row.netSales,
-        row.grossCommission, row.refundCommission, row.netCommission,
-        row.grossFBAFee, row.refundFBAFee, row.netFBAFee,
-        row.storageFee, row.dataSources?.storageFee || 'transaction',
-        row.adFee, row.dataSources?.adFee || 'transaction',
-        row.inboundFee, row.returnFee,
-        row.dataSources?.returnFee || 'transaction',
-        row.productCost, row.dataSources?.productCost || 'transaction',
-        row.deliveryFee, row.dataSources?.deliveryFee || 'transaction',
-        row.subscriptionFee, row.otherFee,
-        row.totalFee, row.netIncome,
-        (row.profitMargin * 100).toFixed(2),
+        row.sku,
+        row.orderQuantity, row.refundQuantity,
+        row.productSales, row.shippingIncome, row.liquidationValue,
+        row.refundProduct, row.refundShipping, row.refundPromo, row.promoDiscount,
+        row.netSales,
+        row.salesCommission, row.refundCommission, row.couponFee, row.netCommission,
+        row.fbaDeliveryFee, row.refundFBAFee, row.returnFee, row.inboundAbnormalFee, row.netFBAFee,
+        row.monthlyStorageFee, row.agedSurcharge, row.totalStorageFee,
+        row.liquidationFee, row.inventoryCompensation, row.safeTClaim,
+        row.refundOther, row.returnShippingFee, row.disposalFee,
+        row.subscriptionFee, row.otherAdjustment, row.inboundFee, row.removalFee,
+        row.adFee, row.headHaul, row.productCost, row.legangDelivery, row.jingdongDelivery, row.fakeOrderFee,
+        row.netIncome, (row.profitMargin * 100).toFixed(2), row.manager,
       ]);
     }
-    const totals = {
-      orderQuantity: skuRows.reduce((s, r) => s + r.orderQuantity, 0),
-      refundQuantity: skuRows.reduce((s, r) => s + r.refundQuantity, 0),
-      grossSales: skuRows.reduce((s, r) => s + r.grossSales, 0),
-      refundAmount: skuRows.reduce((s, r) => s + r.refundAmount, 0),
-      netSales: skuRows.reduce((s, r) => s + r.netSales, 0),
-      grossCommission: skuRows.reduce((s, r) => s + r.grossCommission, 0),
-      refundCommission: skuRows.reduce((s, r) => s + r.refundCommission, 0),
-      netCommission: skuRows.reduce((s, r) => s + r.netCommission, 0),
-      grossFBAFee: skuRows.reduce((s, r) => s + r.grossFBAFee, 0),
-      refundFBAFee: skuRows.reduce((s, r) => s + r.refundFBAFee, 0),
-      netFBAFee: skuRows.reduce((s, r) => s + r.netFBAFee, 0),
-      storageFee: skuRows.reduce((s, r) => s + r.storageFee, 0),
-      adFee: skuRows.reduce((s, r) => s + r.adFee, 0),
-      inboundFee: skuRows.reduce((s, r) => s + r.inboundFee, 0),
-      returnFee: skuRows.reduce((s, r) => s + r.returnFee, 0),
-      productCost: skuRows.reduce((s, r) => s + r.productCost, 0),
-      deliveryFee: skuRows.reduce((s, r) => s + r.deliveryFee, 0),
-      subscriptionFee: skuRows.reduce((s, r) => s + r.subscriptionFee, 0),
-      otherFee: skuRows.reduce((s, r) => s + r.otherFee, 0),
-      totalFee: skuRows.reduce((s, r) => s + r.totalFee, 0),
-      netIncome: skuRows.reduce((s, r) => s + r.netIncome, 0),
-    };
+    // 合计行
+    const sum = (fn: (r: typeof skuRows[0]) => number) => Math.round(skuRows.reduce((s, r) => s + fn(r), 0) * 100) / 100;
     ws1Data.push([]);
-    ws1Data.push(['合计', '', totals.orderQuantity, totals.refundQuantity, totals.orderQuantity - totals.refundQuantity,
-      totals.grossSales, totals.refundAmount, totals.netSales,
-      totals.grossCommission, totals.refundCommission, totals.netCommission,
-      totals.grossFBAFee, totals.refundFBAFee, totals.netFBAFee,
-      totals.storageFee, '', totals.adFee, '', totals.inboundFee, totals.returnFee, '',
-      totals.productCost, '', totals.deliveryFee, '',
-      totals.subscriptionFee, totals.otherFee, totals.totalFee, totals.netIncome, '']);
+    ws1Data.push(['合计',
+      sum(r => r.orderQuantity), sum(r => r.refundQuantity),
+      sum(r => r.productSales), sum(r => r.shippingIncome), sum(r => r.liquidationValue),
+      sum(r => r.refundProduct), sum(r => r.refundShipping), sum(r => r.refundPromo), sum(r => r.promoDiscount),
+      sum(r => r.netSales),
+      sum(r => r.salesCommission), sum(r => r.refundCommission), sum(r => r.couponFee), sum(r => r.netCommission),
+      sum(r => r.fbaDeliveryFee), sum(r => r.refundFBAFee), sum(r => r.returnFee), sum(r => r.inboundAbnormalFee), sum(r => r.netFBAFee),
+      sum(r => r.monthlyStorageFee), sum(r => r.agedSurcharge), sum(r => r.totalStorageFee),
+      sum(r => r.liquidationFee), sum(r => r.inventoryCompensation), sum(r => r.safeTClaim),
+      sum(r => r.refundOther), sum(r => r.returnShippingFee), sum(r => r.disposalFee),
+      sum(r => r.subscriptionFee), sum(r => r.otherAdjustment), sum(r => r.inboundFee), sum(r => r.removalFee),
+      sum(r => r.adFee), sum(r => r.headHaul), sum(r => r.productCost), sum(r => r.legangDelivery), sum(r => r.jingdongDelivery), sum(r => r.fakeOrderFee),
+      sum(r => r.netIncome), '', '']);
     const ws1 = XLSX.utils.aoa_to_sheet(ws1Data);
     ws1['!cols'] = ws1Data[2].map(() => ({ wch: 14 }));
     XLSX.utils.book_append_sheet(wb, ws1, 'SKU利润表');
@@ -1054,8 +1040,8 @@ export default function ImportPage() {
                           <th className="text-right py-2 px-2 font-medium text-xs">入库配置费</th>
                           <th className="text-right py-2 px-2 font-medium text-xs">退货处理费</th>
                           <th className="text-right py-2 px-2 font-medium text-xs">订阅费</th>
-                          <th className="text-right py-2 px-2 font-medium text-xs">其他费</th>
-                          <th className="text-right py-2 px-2 font-medium text-xs">费用总计</th>
+                          <th className="text-right py-2 px-2 font-medium text-xs">其他调整</th>
+                          <th className="text-right py-2 px-2 font-medium text-xs">SKU净收入</th>
                           <th className="text-right py-2 px-2 font-medium text-xs">SKU净收入</th>
                           <th className="text-right py-2 px-2 font-medium text-xs">利润率</th>
                         </tr>
@@ -1070,7 +1056,7 @@ export default function ImportPage() {
                             <td className="py-2 px-2 text-right text-xs">${row.netCommission.toFixed(2)}</td>
                             <td className="py-2 px-2 text-right text-xs">${row.netFBAFee.toFixed(2)}</td>
                             <td className="py-2 px-2 text-right text-xs">
-                              <span className="font-medium">${row.storageFee.toFixed(2)}</span>
+                              <span className="font-medium">${row.monthlyStorageFee.toFixed(2)}</span>
                               <span className={`ml-1 text-[10px] ${
                                 row.dataSources?.storageFee === 'storage_report' ? 'text-amber-500' :
                                 row.dataSources?.storageFee === 'merged' ? 'text-blue-500' : 'text-gray-400'
@@ -1092,8 +1078,8 @@ export default function ImportPage() {
                             <td className="py-2 px-2 text-right text-xs">${row.inboundFee.toFixed(2)}</td>
                             <td className="py-2 px-2 text-right text-xs">${row.returnFee.toFixed(2)}</td>
                             <td className="py-2 px-2 text-right text-xs">${row.subscriptionFee.toFixed(2)}</td>
-                            <td className="py-2 px-2 text-right text-xs">${row.otherFee.toFixed(2)}</td>
-                            <td className="py-2 px-2 text-right text-xs">${row.totalFee.toFixed(2)}</td>
+                            <td className="py-2 px-2 text-right text-xs">${row.otherAdjustment.toFixed(2)}</td>
+                            <td className="py-2 px-2 text-right text-xs font-semibold">${row.netIncome.toFixed(2)}</td>
                             <td className={`py-2 px-2 text-right font-semibold text-xs ${row.netIncome >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                               ${row.netIncome.toFixed(2)}
                             </td>

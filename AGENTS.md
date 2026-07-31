@@ -61,12 +61,12 @@
 
 | 文件 | 说明 |
 |------|------|
-| `src/lib/types.ts` | 全局类型定义，含 ReportType、ReportMeta、SettlementReport 等 |
+| `src/lib/types.ts` | 全局类型定义，含 SKUProfitRow(41列)、ReportType、ReportMeta、SettlementReport 等 |
 | `src/lib/excel-parser.ts` | 交易明细Excel解析，含列名归一化、交易类型识别 |
-| `src/lib/report-parser.ts` | 多报表解析器：结算报告/仓储费报告/广告报告/退货报告 + 自动识别 |
-| `src/lib/profit-calculator.ts` | 利润计算，支持多报表数据合并 |
+| `src/lib/report-parser.ts` | 多报表解析器：7种报表类型 + 自动识别 |
+| `src/lib/profit-calculator.ts` | 利润计算，41列模板，支持多报表数据合并 |
 | `src/lib/idb.ts` | IndexedDB 本地存储操作 |
-| `src/app/import/page.tsx` | 数据导入页，含报表类型选择器、已上传报表列表、解析预览 |
+| `src/app/import/page.tsx` | 数据导入页，含报表类型选择器、已上传报表列表、利润表预览与导出 |
 
 ### 多报表支持说明
 

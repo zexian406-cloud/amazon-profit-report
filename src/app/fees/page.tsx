@@ -66,12 +66,12 @@ export default function FeesPage() {
   const feeStructure = [
     { name: 'FBA费', value: Math.abs(skuRows.reduce((s, r) => s + r.netFBAFee, 0)) },
     { name: '佣金', value: Math.abs(skuRows.reduce((s, r) => s + r.netCommission, 0)) },
-    { name: '仓储费', value: Math.abs(skuRows.reduce((s, r) => s + r.storageFee, 0)) },
+    { name: '仓储费', value: Math.abs(skuRows.reduce((s, r) => s + r.totalStorageFee, 0)) },
     { name: '广告费', value: Math.abs(skuRows.reduce((s, r) => s + r.adFee, 0)) },
     { name: '入库配置费', value: Math.abs(skuRows.reduce((s, r) => s + r.inboundFee, 0)) },
     { name: '退货处理费', value: Math.abs(skuRows.reduce((s, r) => s + r.returnFee, 0)) },
     { name: '订阅费', value: Math.abs(skuRows.reduce((s, r) => s + r.subscriptionFee, 0)) },
-    { name: '其他', value: Math.abs(skuRows.reduce((s, r) => s + r.otherFee, 0)) },
+    { name: '其他', value: Math.abs(skuRows.reduce((s, r) => s + r.otherAdjustment, 0)) },
   ].filter(f => f.value > 0);
 
   const totalFee = feeStructure.reduce((s, f) => s + f.value, 0);

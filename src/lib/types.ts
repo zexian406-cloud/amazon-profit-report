@@ -1,15 +1,21 @@
 // 交易类型
 export type TransactionType =
-  | 'Order'           // 订单
-  | 'Refund'          // 退款
-  | 'Adjustment'      // 调整
-  | 'FBAFee'          // FBA费用
-  | 'SubscriptionFee' // 订阅费
-  | 'StorageFee'      // 仓储费
-  | 'AdFee'           // 广告费
-  | 'InboundFee'      // 入库配置费
-  | 'ReturnFee'       // 退货处理费
-  | 'Other';          // 其他
+  | 'Order'              // 订单
+  | 'Refund'             // 退款
+  | 'Adjustment'         // 调整
+  | 'FBAFee'             // FBA费用
+  | 'SubscriptionFee'    // 订阅费
+  | 'StorageFee'         // 仓储费
+  | 'AdFee'              // 广告费
+  | 'InboundFee'         // 入库配置费
+  | 'ReturnFee'          // 退货处理费
+  | 'CouponFee'          // Coupon费
+  | 'LiquidationFee'     // 清算手续费
+  | 'InventoryCompensation' // 库存赔偿
+  | 'SafeTClaim'         // SAFE-T赔付
+  | 'DisposalFee'        // 弃置费
+  | 'RemovalFee'         // 移除订单费
+  | 'Other';             // 其他
 
 // 报表类型
 export type ReportType =
@@ -37,7 +43,7 @@ export interface ReportTypeFeature {
   type: ReportType;
   keywords: string[];
   requiredColumns: string[][]; // 多组可选列，匹配任一即可
-  priority: number; // 匹配优先级，越高越优先
+  priority: number;
 }
 
 // 原始交易记录
@@ -53,88 +59,114 @@ export interface Transaction {
   totalAmount: number;
   currency: string;
   orderId: string;
-  storeName: string;   // 店铺名称
-  category: string;    // 费用类别
-  rawRow: Record<string, string>; // 原始行数据
+  storeName: string;
+  category: string;
+  rawRow: Record<string, string>;
 }
 
 // 导入的月数据
 export interface MonthlyData {
   id?: number;
-  month: string;       // YYYY-MM
-  storeName: string;   // 店铺名称
-  importDate: string;  // 导入时间
-  fileName: string;    // 文件名
+  month: string;
+  storeName: string;
+  importDate: string;
+  fileName: string;
   transactions: Transaction[];
 }
 
-// SKU利润汇总
+// SKU利润汇总 - 41列完整模板
 export interface SKUProfitRow {
   sku: string;
   asin: string;
   storeName: string;
   month: string;
-  // 订单量
+  // ========== 收入部分 ==========
   orderQuantity: number;
   refundQuantity: number;
-  // 销售额
-  grossSales: number;
-  refundAmount: number;
-  netSales: number;
-  // 佣金
-  grossCommission: number;
-  refundCommission: number;
-  netCommission: number;
-  // FBA费
-  grossFBAFee: number;
-  refundFBAFee: number;
-  netFBAFee: number;
-  // 其他费用
-  storageFee: number;
-  adFee: number;
-  inboundFee: number;
-  returnFee: number;
-  subscriptionFee: number; // 均摊
-  otherFee: number;        // 均摊
-  // 汇总
-  totalFee: number;
-  netIncome: number;
-  profitMargin: number;    // 百分比
-  // 产品成本与运费（来自独立报表）
-  productCost: number;     // 产品成本（来自产品成本表），替换交易明细估算
-  deliveryFee: number;     // 尾程运费（来自尾程运费表），替换运费估算
+  productSales: number;          // 商品销售收入
+  shippingIncome: number;        // 运费收入
+  liquidationValue: number;      // 清算残值收入
+  refundProduct: number;         // 退款-商品
+  refundShipping: number;        // 退款-运费
+  refundPromo: number;           // 退款-促销回冲
+  promoDiscount: number;         // 促销折扣
+  netSales: number;              // ▶ 净销售额
+
+  // ========== 佣金部分 ==========
+  salesCommission: number;       // 销售佣金
+  refundCommission: number;      // 退款-佣金退回
+  couponFee: number;             // Coupon费
+  netCommission: number;         // ▶ 净佣金
+
+  // ========== FBA费用部分 ==========
+  fbaDeliveryFee: number;        // FBA配送费
+  refundFBAFee: number;          // 退款-FBA费退回
+  returnFee: number;             // 退货处理费
+  inboundAbnormalFee: number;    // 入库异常费
+  netFBAFee: number;             // ▶ 净FBA费
+
+  // ========== 仓储费部分 ==========
+  monthlyStorageFee: number;     // 月度仓储费
+  agedSurcharge: number;         // 超龄附加费
+  totalStorageFee: number;       // ▶ 仓储费合计
+
+  // ========== 其他费用 ==========
+  liquidationFee: number;        // 清算手续费
+  inventoryCompensation: number; // 库存赔偿
+  safeTClaim: number;            // SAFE-T赔付
+  refundOther: number;           // 退款-其他
+  returnShippingFee: number;     // 退货运费
+  disposalFee: number;           // 弃置费
+  subscriptionFee: number;       // 订阅费(均摊)
+  otherAdjustment: number;       // 其他调整（均摊）
+  inboundFee: number;            // 入库配置费
+  removalFee: number;            // 订单移除费
+
+  // ========== 外部成本（从其他报表导入） ==========
+  adFee: number;                 // 广告费
+  headHaul: number;              // 头程
+  productCost: number;           // 成本
+  legangDelivery: number;        // 乐歌尾程
+  jingdongDelivery: number;      // 京东尾程
+  fakeOrderFee: number;          // 刷单费
+
+  // ========== 汇总 ==========
+  netIncome: number;             // ▶ SKU净收入
+  profitMargin: number;
+  manager: string;               // 负责人
+
   // 数据来源标注
   dataSources?: {
-    storageFee: string;  // 'transaction' | 'storage_report' | 'merged'
-    adFee: string;       // 'transaction' | 'ad_report' | 'merged'
-    returnFee: string;   // 'transaction' | 'return_report' | 'merged'
-    productCost?: string;  // 'transaction' | 'product_cost_report'
-    deliveryFee?: string;  // 'transaction' | 'delivery_fee_report'
+    storageFee: string;
+    adFee: string;
+    returnFee: string;
+    productCost?: string;
+    deliveryFee?: string;
   };
 }
 
-// 共享费用（无法归属到单个SKU的费用）
+// 共享费用
 export interface SharedFee {
   id?: number;
   month: string;
   storeName: string;
-  category: string;    // 如: 广告费, Vine注册费, 订阅费, 其他
+  category: string;
   totalAmount: number;
   description: string;
-  source?: string;     // 数据来源: 'transaction' | 'settlement' | 'ad_report' | 'storage_report'
+  source?: string;
 }
 
 // 全局收支核对
 export interface Reconciliation {
   month: string;
   storeName: string;
-  skuNetIncome: number;       // SKU净收入汇总
-  sharedFeeTotal: number;     // 共享费用汇总
-  totalNetIncome: number;     // 净收入 = SKU净收入 - 共享费用
-  grandTotalFromBill: number; // 原始账单总计
-  difference: number;         // 差异
-  settlementTotal?: number;   // 结算报告总额（如有）
-  settlementDiff?: number;    // 与结算报告的差异
+  skuNetIncome: number;
+  sharedFeeTotal: number;
+  totalNetIncome: number;
+  grandTotalFromBill: number;
+  difference: number;
+  settlementTotal?: number;
+  settlementDiff?: number;
 }
 
 // 历史月数据
@@ -147,9 +179,8 @@ export interface HistoryMonth {
   skuCount: number;
 }
 
-// ====== 新增报表类型 ======
+// ====== 多报表类型 ======
 
-// 结算报告解析结果
 export interface SettlementReport {
   month: string;
   storeName: string;
@@ -158,11 +189,10 @@ export interface SettlementReport {
   periodEnd: string;
   totalAmount: number;
   transactionCount: number;
-  feeSummary: Record<string, number>; // 费用分类汇总
+  feeSummary: Record<string, number>;
   rawData: Record<string, string>[];
 }
 
-// 仓储费报告条目
 export interface StorageFeeItem {
   sku: string;
   asin: string;
@@ -174,10 +204,9 @@ export interface StorageFeeItem {
   storeName: string;
 }
 
-// 广告报告条目
 export interface AdReportItem {
   campaignName: string;
-  campaignType: string; // SP / SB / SD
+  campaignType: string;
   sku: string;
   asin: string;
   impressions: number;
@@ -190,7 +219,6 @@ export interface AdReportItem {
   storeName: string;
 }
 
-// 退货报告条目
 export interface ReturnReportItem {
   sku: string;
   asin: string;
@@ -203,23 +231,21 @@ export interface ReturnReportItem {
   storeName: string;
 }
 
-// 产品成本/FOB条目
 export interface ProductCostItem {
   sku: string;
   productName: string;
-  fobCost: number;      // FOB/采购成本价
+  fobCost: number;
   currency: string;
-  effectiveDate: string; // 生效日期
+  effectiveDate: string;
   month: string;
   storeName: string;
 }
 
-// 尾程运费条目
 export interface DeliveryFeeItem {
   sku: string;
   orderId: string;
-  deliveryFee: number;   // 尾程配送费
-  carrier: string;       // 物流商
+  deliveryFee: number;
+  carrier: string;
   shippingMethod: string;
   destination: string;
   deliveryDate: string;
@@ -227,7 +253,6 @@ export interface DeliveryFeeItem {
   storeName: string;
 }
 
-// 已上传报表元信息
 export interface UploadedReport {
   id: string;
   fileName: string;
@@ -239,25 +264,21 @@ export interface UploadedReport {
   status: 'parsed' | 'merged';
 }
 
-// 多报表解析结果
 export interface MultiReportResult {
   month: string;
   storeName: string;
   transactions: Transaction[];
   sharedFees: SharedFee[];
   reconciliation: Reconciliation | null;
-  // 各报表独立数据
   settlementReport?: SettlementReport;
   storageFeeItems?: StorageFeeItem[];
   adReportItems?: AdReportItem[];
   returnReportItems?: ReturnReportItem[];
   productCostItems?: ProductCostItem[];
   deliveryFeeItems?: DeliveryFeeItem[];
-  // 已上传报表清单
   uploadedReports: UploadedReport[];
 }
 
-// 解析结果（兼容旧版）
 export interface ParseResult {
   month: string;
   storeName: string;
@@ -266,13 +287,12 @@ export interface ParseResult {
   reconciliation: Reconciliation | null;
 }
 
-// 店铺配置
 export interface StoreConfig {
   id?: number;
   name: string;
   currency: string;
-  subscriptionFee: number;    // 月订阅费
-  otherSharedFees: number;    // 其他共享费用
+  subscriptionFee: number;
+  otherSharedFees: number;
 }
 
 export const DEFAULT_STORES: StoreConfig[] = [
@@ -281,7 +301,6 @@ export const DEFAULT_STORES: StoreConfig[] = [
   { name: '三店', currency: 'USD', subscriptionFee: 39.99, otherSharedFees: 0 },
 ];
 
-// 费用类型映射
 export const FEE_CATEGORY_MAP: Record<string, string> = {
   '广告费': 'AdFee',
   '广告': 'AdFee',
