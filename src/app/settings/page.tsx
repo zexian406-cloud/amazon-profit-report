@@ -1,14 +1,15 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogClose } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogClose, DialogDescription } from '@/components/ui/dialog';
 import { useShops } from '@/hooks/use-shops';
-import { getShopColor, CURRENCY_OPTIONS } from '@/lib/types';
-import { Store, Plus, Pencil, Trash2, AlertTriangle, DollarSign, User } from 'lucide-react';
+import { getShopColor, CURRENCY_OPTIONS, type ShippingProvider } from '@/lib/types';
+import { getShippingProviders, addShippingProvider, updateShippingProviderName, deleteShippingProvider } from '@/lib/idb';
+import { Store, Plus, Pencil, Trash2, AlertTriangle, DollarSign, User, Package } from 'lucide-react';
 
 export default function SettingsPage() {
   const { shops, addShop, removeShop, renameShop, updateShop } = useShops();
@@ -18,6 +19,44 @@ export default function SettingsPage() {
   const [editingName, setEditingName] = useState('');
   const [editingId, setEditingId] = useState<number | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<number | null>(null);
+
+  // 海外仓费用类型管理
+  const [providers, setProviders] = useState<ShippingProvider[]>([]);
+  const [newProviderName, setNewProviderName] = useState('');
+  const [editingProviderId, setEditingProviderId] = useState<number | null>(null);
+  const [editingProviderName, setEditingProviderName] = useState('');
+  const [deleteProviderConfirm, setDeleteProviderConfirm] = useState<number | null>(null);
+
+  useEffect(() => {
+    getShippingProviders().then(setProviders);
+  }, []);
+
+  const handleAddProvider = async () => {
+    const name = newProviderName.trim();
+    if (!name) return;
+    if (providers.some(p => p.name === name)) {
+      alert('海外仓名称已存在');
+      return;
+    }
+    await addShippingProvider(name);
+    setProviders(await getShippingProviders());
+    setNewProviderName('');
+  };
+
+  const handleRenameProvider = async (id: number) => {
+    const name = editingProviderName.trim();
+    if (!name) return;
+    await updateShippingProviderName(id, name);
+    setProviders(await getShippingProviders());
+    setEditingProviderId(null);
+    setEditingProviderName('');
+  };
+
+  const handleDeleteProvider = async (id: number) => {
+    await deleteShippingProvider(id);
+    setProviders(await getShippingProviders());
+    setDeleteProviderConfirm(null);
+  };
 
   const handleAdd = async () => {
     const name = newShopName.trim();
@@ -237,6 +276,107 @@ export default function SettingsPage() {
           </div>
         </CardContent>
       </Card>
+
+      {/* 海外仓费用类型管理 */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Package className="h-5 w-5" />
+            海外仓费用类型管理
+          </CardTitle>
+          <CardDescription>
+            管理利润表中的海外仓尾程运费列。默认包含乐歌、京东。新增合作仓库后在此添加，利润表会自动生成对应列。
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            {providers.map((provider) => (
+              <div key={provider.id} className="flex items-center justify-between rounded-lg border p-3">
+                <div className="flex items-center gap-3">
+                  <Package className="h-4 w-4 text-muted-foreground" />
+                  {editingProviderId === provider.id ? (
+                    <Input
+                      value={editingProviderName}
+                      onChange={(e) => setEditingProviderName(e.target.value)}
+                      className="h-8 w-[200px]"
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') handleRenameProvider(provider.id!);
+                        if (e.key === 'Escape') { setEditingProviderId(null); }
+                      }}
+                    />
+                  ) : (
+                    <span className="font-medium">{provider.name}</span>
+                  )}
+                </div>
+                <div className="flex items-center gap-2">
+                  {editingProviderId === provider.id ? (
+                    <>
+                      <Button size="sm" onClick={() => handleRenameProvider(provider.id!)}>保存</Button>
+                      <Button size="sm" variant="ghost" onClick={() => setEditingProviderId(null)}>取消</Button>
+                    </>
+                  ) : (
+                    <>
+                      <Button size="sm" variant="ghost" onClick={() => {
+                        setEditingProviderId(provider.id ?? null);
+                        setEditingProviderName(provider.name);
+                      }}>
+                        <Pencil className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="text-destructive"
+                        onClick={() => setDeleteProviderConfirm(provider.id ?? null)}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </>
+                  )}
+                </div>
+              </div>
+            ))}
+            <div className="flex items-center gap-2">
+              <Input
+                placeholder="新海外仓名称，如：万邑通"
+                value={newProviderName}
+                onChange={(e) => setNewProviderName(e.target.value)}
+                className="h-9"
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') handleAddProvider();
+                }}
+              />
+              <Button onClick={handleAddProvider} size="sm">添加</Button>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* 删除海外仓确认弹窗 */}
+      <Dialog open={deleteProviderConfirm !== null} onOpenChange={(open) => !open && setDeleteProviderConfirm(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>确认删除</DialogTitle>
+            <DialogDescription>
+              删除后，利润表中将不再显示该海外仓的尾程运费列。已导入的运费数据不受影响，但不会在利润表中展示。
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <DialogClose asChild>
+              <Button variant="outline">取消</Button>
+            </DialogClose>
+            <Button
+              variant="destructive"
+              onClick={() => {
+                if (deleteProviderConfirm !== null) {
+                  handleDeleteProvider(deleteProviderConfirm!);
+                }
+              }}
+            >
+              确认删除
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

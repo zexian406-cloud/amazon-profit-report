@@ -129,8 +129,7 @@ export interface SKUProfitRow {
   adFee: number;                 // 广告费
   headHaul: number;              // 头程
   productCost: number;           // 成本
-  legangDelivery: number;        // 乐歌尾程
-  jingdongDelivery: number;      // 京东尾程
+  deliveryFeeByProvider: Record<string, number>; // 各海外仓尾程运费（动态）
   fakeOrderFee: number;          // 刷单费
 
   // ========== 汇总 ==========
@@ -249,11 +248,18 @@ export interface DeliveryFeeItem {
   orderId: string;
   deliveryFee: number;
   carrier: string;
+  provider: string;         // 海外仓名称（乐歌/京东/万邑通等）
   shippingMethod: string;
   destination: string;
   deliveryDate: string;
   month: string;
   storeName: string;
+}
+
+export interface ShippingProvider {
+  id?: number;
+  name: string;
+  createdAt: string;
 }
 
 export interface ManagerMapping {

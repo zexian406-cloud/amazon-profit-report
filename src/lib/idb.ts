@@ -1,7 +1,7 @@
-import { MonthlyData, SharedFee, StoreConfig, SKUProfitRow, HistoryMonth, Shop, DEFAULT_SHOP_NAMES, ExchangeRate, ManagerMapping, ExchangeRateOverride } from './types';
+import { MonthlyData, SharedFee, StoreConfig, SKUProfitRow, HistoryMonth, Shop, DEFAULT_SHOP_NAMES, ExchangeRate, ManagerMapping, ExchangeRateOverride, ShippingProvider } from './types';
 
 const DB_NAME = 'amazon_profit_db';
-const DB_VERSION = 5;
+const DB_VERSION = 6;
 
 function openDB(): Promise<IDBDatabase> {
   return new Promise((resolve, reject) => {
@@ -31,6 +31,9 @@ function openDB(): Promise<IDBDatabase> {
       }
       if (!db.objectStoreNames.contains('exchangeRateOverrides')) {
         db.createObjectStore('exchangeRateOverrides', { keyPath: 'id', autoIncrement: true });
+      }
+      if (!db.objectStoreNames.contains('shippingProviders')) {
+        db.createObjectStore('shippingProviders', { keyPath: 'id', autoIncrement: true });
       }
     };
     request.onsuccess = () => resolve(request.result);
@@ -459,6 +462,55 @@ export async function deleteShop(id: number): Promise<void> {
     const tx = db.transaction(['shops', 'storeConfigs'], 'readwrite');
     tx.objectStore('shops').delete(id);
     tx.objectStore('storeConfigs').delete(id);
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error);
+  });
+}
+
+// ====== Shipping Providers (海外仓费用类型) ======
+export async function getShippingProviders(): Promise<ShippingProvider[]> {
+  const db = await openDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction('shippingProviders', 'readonly');
+    const store = tx.objectStore('shippingProviders');
+    const req = store.getAll();
+    req.onsuccess = () => resolve(req.result as ShippingProvider[]);
+    req.onerror = () => reject(req.error);
+  });
+}
+
+export async function addShippingProvider(name: string): Promise<number> {
+  const db = await openDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction('shippingProviders', 'readwrite');
+    const store = tx.objectStore('shippingProviders');
+    const req = store.add({ name, createdAt: new Date().toISOString() });
+    req.onsuccess = () => resolve(req.result as number);
+    req.onerror = () => reject(req.error);
+  });
+}
+
+export async function updateShippingProviderName(id: number, name: string): Promise<void> {
+  const db = await openDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction('shippingProviders', 'readwrite');
+    const store = tx.objectStore('shippingProviders');
+    const req = store.get(id);
+    req.onsuccess = () => {
+      const data = req.result as ShippingProvider;
+      data.name = name;
+      store.put(data);
+    };
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error);
+  });
+}
+
+export async function deleteShippingProvider(id: number): Promise<void> {
+  const db = await openDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction('shippingProviders', 'readwrite');
+    tx.objectStore('shippingProviders').delete(id);
     tx.oncomplete = () => resolve();
     tx.onerror = () => reject(tx.error);
   });

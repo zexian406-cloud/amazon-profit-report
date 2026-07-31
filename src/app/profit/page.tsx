@@ -11,16 +11,23 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { getAllMonthlyData, getSharedFees, getExchangeRates, getExchangeRateOverrides } from '@/lib/idb';
+import { getAllMonthlyData, getSharedFees, getExchangeRates, getExchangeRateOverrides, getShippingProviders } from '@/lib/idb';
 import { calculateSKUProfit } from '@/lib/profit-calculator';
-import { MonthlyData, SharedFee, SKUProfitRow, Reconciliation, ALL_STORES, ExchangeRateOverride } from '@/lib/types';
+import { MonthlyData, SharedFee, SKUProfitRow, Reconciliation, ALL_STORES, ExchangeRateOverride, ShippingProvider } from '@/lib/types';
 import { CURRENCY_OPTIONS, ExchangeRate, getCurrencySymbol, convertAmountWithOverrides, formatCurrency } from '@/lib/currency';
 import { useShops } from '@/hooks/use-shops';
 import { ShopFilter } from '@/components/layout/shop-filter';
 import { Search, ArrowUpDown, Download } from 'lucide-react';
 import * as XLSX from 'xlsx';
 
-const COLUMNS = [
+interface ColumnDef {
+  key: string;
+  label: string;
+  type: 'string' | 'number' | 'currency' | 'percent';
+  bold?: boolean;
+}
+
+const BASE_COLUMNS: ColumnDef[] = [
   { key: 'sku', label: 'SKU', type: 'string' },
   { key: 'orderQuantity', label: '订单量', type: 'number' },
   { key: 'refundQuantity', label: '退款量', type: 'number' },
@@ -57,8 +64,7 @@ const COLUMNS = [
   { key: 'adFee', label: '广告费', type: 'currency' },
   { key: 'headHaul', label: '头程', type: 'currency' },
   { key: 'productCost', label: '成本', type: 'currency' },
-  { key: 'legangDelivery', label: '乐歌尾程', type: 'currency' },
-  { key: 'jingdongDelivery', label: '京东尾程', type: 'currency' },
+  // deliveryFeeByProvider 列将在组件中动态生成
   { key: 'fakeOrderFee', label: '刷单费', type: 'currency' },
   { key: 'netIncome', label: '▶ SKU净收入', type: 'currency', bold: true },
   { key: 'profitMargin', label: '利润率', type: 'percent' },
@@ -73,6 +79,7 @@ export default function ProfitPage() {
   const [displayCurrency, setDisplayCurrency] = useState('CNY');
   const [exchangeRates, setExchangeRates] = useState<ExchangeRate[]>([]);
   const [exchangeRateOverrides, setExchangeRateOverrides] = useState<ExchangeRateOverride[]>([]);
+  const [shippingProviders, setShippingProviders] = useState<ShippingProvider[]>([]);
   const [skuRows, setSkuRows] = useState<SKUProfitRow[]>([]);
   const [sharedFees, setSharedFees] = useState<SharedFee[]>([]);
   const [reconciliation, setReconciliation] = useState<Reconciliation | null>(null);
@@ -84,20 +91,38 @@ export default function ProfitPage() {
   const months = [...new Set(monthlyDataList.map(d => d.month))].sort();
   const stores = [...new Set(monthlyDataList.map(d => d.storeName))];
 
+  const COLUMNS = useMemo(() => {
+    const providerColumns: ColumnDef[] = (shippingProviders || []).map(p => ({
+      key: `provider_${p.name}`,
+      label: p.name,
+      type: 'currency' as const,
+    }));
+    const result = [...BASE_COLUMNS];
+    const idx = result.findIndex(c => c.key === 'fakeOrderFee');
+    if (idx >= 0) {
+      result.splice(idx, 0, ...providerColumns);
+    } else {
+      result.push(...providerColumns);
+    }
+    return result;
+  }, [shippingProviders]);
+
   useEffect(() => {
     loadData();
   }, []);
 
   async function loadData() {
     try {
-      const [data, rates, overrides] = await Promise.all([
+      const [data, rates, overrides, providers] = await Promise.all([
         getAllMonthlyData(),
         getExchangeRates(),
         getExchangeRateOverrides(),
+        getShippingProviders(),
       ]);
       setMonthlyDataList(data);
       setExchangeRates(rates);
       setExchangeRateOverrides(overrides);
+      setShippingProviders(providers);
       if (data.length > 0) {
         setSelectedMonth(data[0].month);
         setSelectedStore('全部');
@@ -193,7 +218,13 @@ export default function ProfitPage() {
   }
 
   function formatVal(row: SKUProfitRow, col: typeof COLUMNS[0]) {
-    const val = (row as any)[col.key];
+    let val: any;
+    if (col.key.startsWith('provider_')) {
+      const providerName = col.key.replace('provider_', '');
+      val = row.deliveryFeeByProvider?.[providerName] ?? 0;
+    } else {
+      val = (row as any)[col.key];
+    }
     if (val === undefined || val === null || val === '') return '-';
     if (col.type === 'currency') {
       let v = val as number;

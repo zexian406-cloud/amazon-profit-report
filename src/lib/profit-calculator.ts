@@ -94,17 +94,13 @@ export function calculateSKUProfitWithReports(
   }
 
   const deliveryFeeBySKU = new Map<string, number>();
-  let legangTotal = 0;
-  let jingdongTotal = 0;
+  const providerTotals = new Map<string, number>();
   if (deliveryFeeItems) {
     for (const item of deliveryFeeItems) {
       const current = deliveryFeeBySKU.get(item.sku) || 0;
       deliveryFeeBySKU.set(item.sku, current + item.deliveryFee);
-      if (item.carrier.toLowerCase().includes('legang') || item.carrier.toLowerCase().includes('乐歌')) {
-        legangTotal += item.deliveryFee;
-      } else if (item.carrier.toLowerCase().includes('jingdong') || item.carrier.toLowerCase().includes('京东')) {
-        jingdongTotal += item.deliveryFee;
-      }
+      const provider = item.carrier || '默认';
+      providerTotals.set(provider, (providerTotals.get(provider) || 0) + item.deliveryFee);
     }
   }
 
@@ -319,20 +315,16 @@ export function calculateSKUProfitWithReports(
     // 尾程运费（按配送商拆分）
     const reportDeliveryFee = deliveryFeeBySKU.get(sku);
     let deliveryFeeSource: string;
-    let legangDelivery = 0;
-    let jingdongDelivery = 0;
+    const deliveryFeeByProvider: Record<string, number> = {};
     if (reportDeliveryFee !== undefined && reportDeliveryFee > 0) {
-      // 按比例分配
-      const totalDelivery = reportDeliveryFee;
-      const totalAll = legangTotal + jingdongTotal + 1; // +1 避免除零
-      legangDelivery = Math.round((totalDelivery * legangTotal / totalAll) * 100) / 100;
-      jingdongDelivery = Math.round((totalDelivery * jingdongTotal / totalAll) * 100) / 100;
+      // 按比例分配到各配送商
+      const totalAll = Array.from(providerTotals.values()).reduce((a, b) => a + b, 0) + 1;
+      for (const [provider, total] of providerTotals) {
+        deliveryFeeByProvider[provider] = Math.round((reportDeliveryFee * total / totalAll) * 100) / 100;
+      }
       deliveryFeeSource = 'delivery_fee_report';
-    } else {
-      legangDelivery = 0;
-      jingdongDelivery = 0;
-      deliveryFeeSource = 'transaction';
     }
+    deliveryFeeSource ||= 'transaction';
 
     // 其他调整（均摊前）
     const otherAdjustment = 0;
@@ -346,7 +338,8 @@ export function calculateSKUProfitWithReports(
     // 净收入计算
     // 净收入 = 净销售额 + 净佣金 + 净FBA费 - 仓储费合计 - 其他费用 - 外部成本
     const otherFeesTotal = liquidationFeeVal + inventoryCompensationVal + safeTClaimVal + refundOther + returnShippingFee + disposalFeeVal + inboundFee + removalFeeVal + subscriptionFee + otherAdjustment + fakeOrderFee;
-    const externalCosts = adFee + headHaul + productCost + legangDelivery + jingdongDelivery;
+    const totalDeliveryFee = Object.values(deliveryFeeByProvider).reduce((s, v) => s + v, 0);
+    const externalCosts = adFee + headHaul + productCost + totalDeliveryFee;
 
     // 注意：净佣金和净FBA费已经是负数（支出）
     // 净销售额是正数，净佣金是负数（支出），净FBA费是负数（支出）
@@ -395,8 +388,7 @@ export function calculateSKUProfitWithReports(
       adFee,
       headHaul,
       productCost,
-      legangDelivery,
-      jingdongDelivery,
+      deliveryFeeByProvider,
       fakeOrderFee,
       netIncome,
       profitMargin,
@@ -431,7 +423,7 @@ export function calculateSKUProfitWithReports(
 
       // 重新计算净收入
       const otherFeesTotal = row.liquidationFee + row.inventoryCompensation + row.safeTClaim + row.refundOther + row.returnShippingFee + row.disposalFee + row.inboundFee + row.removalFee + row.subscriptionFee + row.otherAdjustment + row.fakeOrderFee;
-      const externalCosts = row.adFee + row.headHaul + row.productCost + row.legangDelivery + row.jingdongDelivery;
+      const externalCosts = row.adFee + row.headHaul + row.productCost + Object.values(row.deliveryFeeByProvider).reduce((s: number, v: number) => s + v, 0);
 
       row.netIncome = Math.round((row.netSales + row.netCommission + row.netFBAFee - row.totalStorageFee - otherFeesTotal - externalCosts) * 100) / 100;
       row.profitMargin = row.netSales !== 0 ? Math.round((row.netIncome / row.netSales) * 10000) / 10000 : 0;

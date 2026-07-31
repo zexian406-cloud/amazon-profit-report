@@ -590,6 +590,7 @@ export function parseDeliveryFeeReport(file: File): Promise<{
           orderId: orderId || 'N/A',
           deliveryFee,
           carrier: carrier || 'N/A',
+          provider: carrier || 'N/A',
           shippingMethod: shippingMethod || 'N/A',
           destination: destination || 'N/A',
           deliveryDate: dateStr || month,

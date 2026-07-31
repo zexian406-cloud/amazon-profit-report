@@ -385,7 +385,7 @@ export default function ImportPage() {
         '月度仓储费', '超龄附加费', '▶ 仓储费合计',
         '清算手续费', '库存赔偿', 'SAFE-T赔付', '退款-其他', '退货运费',
         '弃置费', '订阅费(均摊)', '其他调整（均摊）', '入库配置费', '订单移除费',
-        '广告费', '头程', '成本', '乐歌尾程', '京东尾程', '刷单费',
+        '广告费', '头程', '成本', ...(skuRows[0]?.deliveryFeeByProvider ? Object.keys(skuRows[0].deliveryFeeByProvider) : ['乐歌尾程', '京东尾程']), '刷单费',
         '▶ SKU净收入', '利润率(%)', '负责人'],
     ];
     for (const row of skuRows) {
@@ -401,7 +401,7 @@ export default function ImportPage() {
         row.liquidationFee, row.inventoryCompensation, row.safeTClaim,
         row.refundOther, row.returnShippingFee, row.disposalFee,
         row.subscriptionFee, row.otherAdjustment, row.inboundFee, row.removalFee,
-        row.adFee, row.headHaul, row.productCost, row.legangDelivery, row.jingdongDelivery, row.fakeOrderFee,
+        row.adFee, row.headHaul, row.productCost, ...(row.deliveryFeeByProvider ? Object.keys(row.deliveryFeeByProvider).map(k => row.deliveryFeeByProvider[k]) : []), row.fakeOrderFee,
         row.netIncome, (row.profitMargin * 100).toFixed(2), row.manager,
       ]);
     }
@@ -419,7 +419,7 @@ export default function ImportPage() {
       sum(r => r.liquidationFee), sum(r => r.inventoryCompensation), sum(r => r.safeTClaim),
       sum(r => r.refundOther), sum(r => r.returnShippingFee), sum(r => r.disposalFee),
       sum(r => r.subscriptionFee), sum(r => r.otherAdjustment), sum(r => r.inboundFee), sum(r => r.removalFee),
-      sum(r => r.adFee), sum(r => r.headHaul), sum(r => r.productCost), sum(r => r.legangDelivery), sum(r => r.jingdongDelivery), sum(r => r.fakeOrderFee),
+      sum(r => r.adFee), sum(r => r.headHaul), sum(r => r.productCost), ...(skuRows[0]?.deliveryFeeByProvider ? Object.keys(skuRows[0].deliveryFeeByProvider).map(p => sum(r => r.deliveryFeeByProvider[p] || 0)) : []), sum(r => r.fakeOrderFee),
       sum(r => r.netIncome), '', '']);
     const ws1 = XLSX.utils.aoa_to_sheet(ws1Data);
     ws1['!cols'] = ws1Data[2].map(() => ({ wch: 14 }));
