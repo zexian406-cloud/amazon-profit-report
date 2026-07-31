@@ -9,6 +9,7 @@ import {
   History,
   Store,
   ChevronDown,
+  BookOpen,
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -64,6 +65,11 @@ const navItems = [
     title: '汇率管理',
     icon: BarChart3,
     href: '/exchange-rates',
+  },
+  {
+    title: '使用说明',
+    icon: BookOpen,
+    href: '/help',
   },
 ];
 
