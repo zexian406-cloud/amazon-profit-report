@@ -108,6 +108,12 @@ body {
 }
 
 /* Smooth sidebar transition */
+/* 侧边栏收起时图标居中 */
+[data-collapsible="icon"] [data-slot="sidebar-menu-button"] {
+  gap: 0 !important;
+  justify-content: center !important;
+}
+
 .sidebar-transition {
   transition: width 300ms ease-out;
 }
