@@ -50,7 +50,7 @@ export function AppSidebar() {
           {!isCollapsed && (
             <div className="flex flex-col">
               <span className="text-sm font-semibold tracking-tight text-white">利润报表</span>
-              <span className="text-[10px] text-white/70 font-normal">Profit Report</span>
+              <span className="text-[10px] text-white font-normal">Profit Report</span>
             </div>
           )}
         </div>
