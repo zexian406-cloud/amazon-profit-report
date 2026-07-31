@@ -13,8 +13,8 @@ export default function SettingsPage() {
   const { shops, addShop, removeShop, renameShop } = useShops();
   const [newShopName, setNewShopName] = useState('');
   const [editingName, setEditingName] = useState('');
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
+  const [editingId, setEditingId] = useState<number | null>(null);
+  const [deleteConfirm, setDeleteConfirm] = useState<number | null>(null);
 
   const handleAdd = async () => {
     const name = newShopName.trim();
@@ -27,24 +27,25 @@ export default function SettingsPage() {
     setNewShopName('');
   };
 
-  const handleRename = async (oldName: string) => {
+  const handleRename = async (id: number) => {
     const newName = editingName.trim();
-    if (!newName || newName === oldName) return;
+    const oldName = shops.find(s => s.id === id)?.name;
+    if (!newName || !oldName || newName === oldName) return;
     if (shops.some(s => s.name === newName)) {
       alert('店铺名称已存在，请使用其他名称');
       return;
     }
-    await renameShop(oldName, newName);
+    await renameShop(id, newName);
     setEditingId(null);
     setEditingName('');
   };
 
-  const handleDelete = async (name: string) => {
+  const handleDelete = async (id: number) => {
     if (shops.length <= 1) {
       alert('至少保留一个店铺');
       return;
     }
-    await removeShop(name);
+    await removeShop(id);
     setDeleteConfirm(null);
   };
 
@@ -88,38 +89,33 @@ export default function SettingsPage() {
         </CardHeader>
         <CardContent>
           <div className="space-y-3">
-            {shops.map((shop, index) => (
+            {shops.map((shop) => (
               <div
-                key={shop.name}
+                key={shop.id}
                 className="flex items-center justify-between p-4 rounded-lg border bg-card hover:bg-accent/5 transition-colors"
               >
                 <div className="flex items-center gap-3">
                   <div
                     className="w-10 h-10 rounded-lg flex items-center justify-center text-white font-medium text-sm"
-                    style={{ backgroundColor: getShopColor(index) }}
+                    style={{ backgroundColor: getShopColor(shop.name) }}
                   >
                     <Store className="h-5 w-5" />
                   </div>
                   <div>
-                    {editingId === shop.name ? (
+                    {editingId === shop.id ? (
                       <div className="flex items-center gap-2">
                         <Input
                           value={editingName}
                           onChange={(e) => setEditingName(e.target.value)}
-                          onKeyDown={(e) => e.key === 'Enter' && handleRename(shop.name)}
+                          onKeyDown={(e) => e.key === 'Enter' && handleRename(shop.id)}
                           className="h-8 w-40"
                           autoFocus
                         />
-                        <Button size="sm" variant="default" onClick={() => handleRename(shop.name)}>确定</Button>
+                        <Button size="sm" variant="default" onClick={() => handleRename(shop.id)}>确定</Button>
                         <Button size="sm" variant="ghost" onClick={() => { setEditingId(null); setEditingName(''); }}>取消</Button>
                       </div>
                     ) : (
-                      <>
-                        <span className="font-medium">{shop.name}</span>
-                        <span className="text-xs text-muted-foreground ml-2">
-                          {shop.currency} · 订阅费 ${shop.subscriptionFee}/月
-                        </span>
-                      </>
+                      <span className="font-medium">{shop.name}</span>
                     )}
                   </div>
                 </div>
@@ -127,16 +123,16 @@ export default function SettingsPage() {
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={() => { setEditingId(shop.name); setEditingName(shop.name); }}
+                    onClick={() => { setEditingId(shop.id); setEditingName(shop.name); }}
                   >
                     <Pencil className="h-4 w-4" />
                   </Button>
-                  <Dialog open={deleteConfirm === shop.name} onOpenChange={(open) => !open && setDeleteConfirm(null)}>
+                  <Dialog open={deleteConfirm === shop.id} onOpenChange={(open) => !open && setDeleteConfirm(null)}>
                     <DialogTrigger asChild>
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => setDeleteConfirm(shop.name)}
+                        onClick={() => setDeleteConfirm(shop.id)}
                         disabled={shops.length <= 1}
                       >
                         <Trash2 className="h-4 w-4 text-destructive" />
@@ -156,7 +152,7 @@ export default function SettingsPage() {
                         <DialogClose asChild>
                           <Button variant="outline">取消</Button>
                         </DialogClose>
-                        <Button variant="destructive" onClick={() => handleDelete(shop.name)}>
+                        <Button variant="destructive" onClick={() => handleDelete(shop.id)}>
                           确认删除
                         </Button>
                       </DialogFooter>

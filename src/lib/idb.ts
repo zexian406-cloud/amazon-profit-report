@@ -1,7 +1,7 @@
-import { MonthlyData, SharedFee, StoreConfig, SKUProfitRow, HistoryMonth } from './types';
+import { MonthlyData, SharedFee, StoreConfig, SKUProfitRow, HistoryMonth, Shop, DEFAULT_SHOP_NAMES } from './types';
 
 const DB_NAME = 'amazon_profit_db';
-const DB_VERSION = 1;
+const DB_VERSION = 2;
 
 function openDB(): Promise<IDBDatabase> {
   return new Promise((resolve, reject) => {
@@ -19,6 +19,9 @@ function openDB(): Promise<IDBDatabase> {
       }
       if (!db.objectStoreNames.contains('profitReports')) {
         db.createObjectStore('profitReports', { keyPath: 'id', autoIncrement: true });
+      }
+      if (!db.objectStoreNames.contains('shops')) {
+        db.createObjectStore('shops', { keyPath: 'id', autoIncrement: true });
       }
     };
     request.onsuccess = () => resolve(request.result);
@@ -185,6 +188,101 @@ export async function saveStoreConfigs(configs: StoreConfig[]): Promise<void> {
     const store = tx.objectStore('storeConfigs');
     store.clear();
     configs.forEach((c) => store.add(c));
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error);
+  });
+}
+
+// ===== 店铺动态管理 =====
+
+export async function getShops(): Promise<Shop[]> {
+  const db = await openDB();
+  const shops = await new Promise<Shop[]>((resolve, reject) => {
+    const tx = db.transaction('shops', 'readonly');
+    const store = tx.objectStore('shops');
+    const req = store.getAll();
+    req.onsuccess = () => resolve(req.result.sort((a, b) => a.id - b.id));
+    req.onerror = () => reject(req.error);
+  });
+  // 首次使用自动初始化三个默认店铺
+  if (shops.length === 0) {
+    const defaults = [
+      { id: 1, name: '一店', createdAt: new Date().toISOString() },
+      { id: 2, name: '二店', createdAt: new Date().toISOString() },
+      { id: 3, name: '三店', createdAt: new Date().toISOString() },
+    ];
+    const writeTx = db.transaction(['shops', 'storeConfigs'], 'readwrite');
+    const shopStore = writeTx.objectStore('shops');
+    const configStore = writeTx.objectStore('storeConfigs');
+    for (const shop of defaults) {
+      shopStore.add(shop);
+      configStore.add({ id: shop.id, name: shop.name, currency: 'USD', subscriptionFee: 39.99, otherSharedFees: 0 });
+    }
+    await new Promise<void>((resolve, reject) => {
+      writeTx.oncomplete = () => resolve();
+      writeTx.onerror = () => reject(writeTx.error);
+    });
+    return defaults;
+  }
+  return shops;
+}
+
+export async function addShop(name: string): Promise<Shop> {
+  const db = await openDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction('shops', 'readwrite');
+    const store = tx.objectStore('shops');
+    const allReq = store.getAll();
+    allReq.onsuccess = () => {
+      const maxId = allReq.result.reduce((max, s) => Math.max(max, s.id), 0);
+      const shop: Shop = { id: maxId + 1, name, createdAt: new Date().toISOString() };
+      const req = store.add(shop);
+      req.onsuccess = () => {
+        // 同步创建默认 StoreConfig
+        const configTx = db.transaction('storeConfigs', 'readwrite');
+        configTx.objectStore('storeConfigs').add({ id: shop.id, name, currency: 'USD', subscriptionFee: 39.99, otherSharedFees: 0 });
+        resolve(shop);
+      };
+      req.onerror = () => reject(req.error);
+    };
+    allReq.onerror = () => reject(allReq.error);
+  });
+}
+
+export async function renameShop(id: number, name: string): Promise<void> {
+  const db = await openDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(['shops', 'storeConfigs'], 'readwrite');
+    const shopStore = tx.objectStore('shops');
+    const getReq = shopStore.get(id);
+    getReq.onsuccess = () => {
+      const shop = getReq.result;
+      if (shop) {
+        shop.name = name;
+        shopStore.put(shop);
+        // 同步更新 storeConfigs
+        const configStore = tx.objectStore('storeConfigs');
+        const configReq = configStore.get(id);
+        configReq.onsuccess = () => {
+          const config = configReq.result;
+          if (config) {
+            config.name = name;
+            configStore.put(config);
+          }
+        };
+      }
+    };
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error);
+  });
+}
+
+export async function deleteShop(id: number): Promise<void> {
+  const db = await openDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(['shops', 'storeConfigs'], 'readwrite');
+    tx.objectStore('shops').delete(id);
+    tx.objectStore('storeConfigs').delete(id);
     tx.oncomplete = () => resolve();
     tx.onerror = () => reject(tx.error);
   });

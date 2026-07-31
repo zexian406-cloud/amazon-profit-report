@@ -1,8 +1,8 @@
 'use client';
 
 import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
-import { StoreConfig } from '@/lib/types';
-import { getStoreConfigs, saveStoreConfigs } from '@/lib/idb';
+import { Shop } from '@/lib/types';
+import { getShops, addShop as addShopIdb, renameShop as renameShopIdb, deleteShop as deleteShopIdb } from '@/lib/idb';
 
 const DEFAULT_SHOP_COLORS = [
   '#1e3a5f',
@@ -18,11 +18,11 @@ const DEFAULT_SHOP_COLORS = [
 ];
 
 interface ShopContextType {
-  shops: StoreConfig[];
+  shops: Shop[];
   loading: boolean;
   addShop: (name: string) => Promise<void>;
-  removeShop: (name: string) => Promise<void>;
-  renameShop: (oldName: string, newName: string) => Promise<void>;
+  removeShop: (id: number) => Promise<void>;
+  renameShop: (id: number, newName: string) => Promise<void>;
   getShopColor: (name: string) => string;
   getShopNames: () => string[];
 }
@@ -38,15 +38,15 @@ const ShopContext = createContext<ShopContextType>({
 });
 
 export function ShopProvider({ children }: { children: React.ReactNode }) {
-  const [shops, setShops] = useState<StoreConfig[]>([]);
+  const [shops, setShops] = useState<Shop[]>([]);
   const [loading, setLoading] = useState(true);
 
   const loadShops = useCallback(async () => {
     try {
-      const configs = await getStoreConfigs();
-      setShops(configs);
+      const list = await getShops();
+      setShops(list);
     } catch (err) {
-      console.error('加载店铺配置失败:', err);
+      console.error('加载店铺列表失败:', err);
     } finally {
       setLoading(false);
     }
@@ -57,31 +57,21 @@ export function ShopProvider({ children }: { children: React.ReactNode }) {
   }, [loadShops]);
 
   const addShop = useCallback(async (name: string) => {
-    const newShop: StoreConfig = {
-      id: Date.now(),
-      name,
-      currency: 'USD',
-      subscriptionFee: 39.99,
-      otherSharedFees: 0,
-    };
-    const updated = [...shops, newShop];
-    await saveStoreConfigs(updated);
-    setShops(updated);
-  }, [shops]);
+    const newShop = await addShopIdb(name);
+    setShops(prev => [...prev, newShop]);
+  }, []);
 
-  const removeShop = useCallback(async (name: string) => {
-    const updated = shops.filter((s) => s.name !== name);
-    await saveStoreConfigs(updated);
-    setShops(updated);
-  }, [shops]);
+  const removeShop = useCallback(async (id: number) => {
+    await deleteShopIdb(id);
+    setShops(prev => prev.filter((s) => s.id !== id));
+  }, []);
 
-  const renameShop = useCallback(async (oldName: string, newName: string) => {
-    const updated = shops.map((s) =>
-      s.name === oldName ? { ...s, name: newName } : s
-    );
-    await saveStoreConfigs(updated);
-    setShops(updated);
-  }, [shops]);
+  const renameShop = useCallback(async (id: number, newName: string) => {
+    await renameShopIdb(id, newName);
+    setShops(prev => prev.map((s) =>
+      s.id === id ? { ...s, name: newName } : s
+    ));
+  }, []);
 
   const getShopColor = useCallback((name: string) => {
     const index = shops.findIndex((s) => s.name === name);

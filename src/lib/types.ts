@@ -287,6 +287,14 @@ export interface ParseResult {
   reconciliation: Reconciliation | null;
 }
 
+export interface Shop {
+  id: number;
+  name: string;
+  createdAt: string;
+}
+
+export const DEFAULT_SHOP_NAMES = ['一店', '二店', '三店'];
+
 export interface StoreConfig {
   id?: number;
   name: string;
