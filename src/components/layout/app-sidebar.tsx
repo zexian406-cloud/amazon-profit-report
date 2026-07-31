@@ -42,15 +42,15 @@ export function AppSidebar() {
 
   return (
     <Sidebar variant="sidebar" collapsible="icon">
-      <SidebarHeader className="border-b border-sidebar-border/30 pb-4">
+      <SidebarHeader className="border-b border-[#2C2C2E] pb-4">
         <div className="flex items-center gap-3 px-3 pt-3">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-white/10">
-            <span className="text-sm font-semibold text-white/90">P</span>
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#007AFF]">
+            <span className="text-sm font-semibold text-white">P</span>
           </div>
           {!isCollapsed && (
             <div className="flex flex-col">
-              <span className="text-sm font-semibold tracking-tight text-white/90">利润报表</span>
-              <span className="text-[10px] text-white/40 font-normal">Profit Report</span>
+              <span className="text-sm font-semibold tracking-tight text-white">利润报表</span>
+              <span className="text-[10px] text-[#8E8E93] font-normal">Profit Report</span>
             </div>
           )}
         </div>
@@ -67,7 +67,7 @@ export function AppSidebar() {
                       asChild
                       isActive={isActive}
                       tooltip={item.title}
-                      className="mx-2 h-9 rounded-lg text-sm font-normal text-white/60 hover:text-white/90 hover:bg-white/5 data-[active=true]:bg-white/10 data-[active=true]:text-white/90 data-[active=true]:font-medium"
+                      className="mx-2 h-9 rounded-lg text-sm font-normal text-[#8E8E93] hover:text-white hover:bg-white/5 data-[active=true]:bg-[#007AFF]/15 data-[active=true]:text-[#007AFF] data-[active=true]:font-medium"
                     >
                       <Link href={item.href}>
                         <item.icon className="h-4 w-4" />

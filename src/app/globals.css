@@ -78,15 +78,15 @@
   --chart-4: oklch(0.65 0.16 80);
   --chart-5: oklch(0.6 0.18 330);
 
-  /* Dark sidebar - Apple style */
-  --sidebar: oklch(0.18 0.005 100);
-  --sidebar-foreground: oklch(0.85 0.005 100);
-  --sidebar-primary: oklch(0.5 0.15 260);
-  --sidebar-primary-foreground: oklch(0.98 0 0);
-  --sidebar-accent: oklch(0.25 0.005 100);
-  --sidebar-accent-foreground: oklch(0.95 0.005 100);
-  --sidebar-border: oklch(0.25 0.005 100);
-  --sidebar-ring: oklch(0.5 0.15 260);
+  /* Dark sidebar - #1D1D1F deep gray */
+  --sidebar: #1D1D1F;
+  --sidebar-foreground: #F5F5F7;
+  --sidebar-primary: #007AFF;
+  --sidebar-primary-foreground: #FFFFFF;
+  --sidebar-accent: #2C2C2E;
+  --sidebar-accent-foreground: #FFFFFF;
+  --sidebar-border: #2C2C2E;
+  --sidebar-ring: #007AFF;
 }
 
 @layer base {
