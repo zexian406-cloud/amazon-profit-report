@@ -67,7 +67,7 @@ export function AppSidebar() {
                       asChild
                       isActive={isActive}
                       tooltip={item.title}
-                      className="mx-2 h-9 rounded-lg text-sm font-normal text-[#8E8E93] hover:text-white hover:bg-white/5 data-[active=true]:bg-[#007AFF]/15 data-[active=true]:text-[#007AFF] data-[active=true]:font-medium"
+                      className="mx-2 h-9 rounded-lg text-sm font-normal text-[#8E8E93] hover:text-white hover:bg-white/5 data-[active=true]:bg-[#007AFF]/15 data-[active=true]:text-[#007AFF] data-[active=true]:font-medium group-data-[collapsible=icon]:gap-0 group-data-[collapsible=icon]:justify-center"
                     >
                       <Link href={item.href}>
                         <item.icon className="h-4 w-4" />
