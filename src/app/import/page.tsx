@@ -14,7 +14,7 @@ import { calculateSKUProfitWithReports } from '@/lib/profit-calculator';
 import { saveMonthlyData, saveSharedFees, saveProfitReport } from '@/lib/idb';
 import {
   ParseResult, SKUProfitRow, SharedFee, Reconciliation,
-  ReportType, REPORT_TYPE_LABELS, UploadedReport, SHOPS,
+  ReportType, REPORT_TYPE_LABELS, UploadedReport,
   SettlementReport, StorageFeeItem, AdReportItem, ReturnReportItem,
   ProductCostItem, DeliveryFeeItem,
 } from '@/lib/types';
@@ -536,7 +536,6 @@ export default function ImportPage() {
           <div className="flex items-center gap-2">
             <span className="text-sm font-medium text-muted-foreground">选择店铺：</span>
             <ShopFilter
-              stores={['一店', '二店', '三店']}
               value={uploadStore}
               onChange={setUploadStore}
               mode="select"

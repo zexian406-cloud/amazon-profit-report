@@ -54,6 +54,11 @@ const navItems = [
     icon: PieChart,
     href: '/fees',
   },
+  {
+    title: '店铺管理',
+    icon: Store,
+    href: '/settings',
+  },
 ];
 
 export function AppSidebar() {

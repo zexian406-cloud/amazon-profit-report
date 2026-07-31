@@ -4,8 +4,9 @@ import { useEffect, useState, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { getAllMonthlyData, getAllProfitReports } from '@/lib/idb';
-import { MonthlyData, SKUProfitRow, ALL_STORES, SHOPS, SHOP_COLORS, getShopLabel, getShopKey } from '@/lib/types';
+import { MonthlyData, SKUProfitRow, ALL_STORES, getShopLabel, getShopColor } from '@/lib/types';
 import { ShopFilter } from '@/components/layout/shop-filter';
+import { useShops } from '@/hooks/use-shops';
 import { TrendingUp, DollarSign, Package, Percent } from 'lucide-react';
 import {
   LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
@@ -203,7 +204,6 @@ export default function DashboardPage() {
         </div>
         <div className="flex items-center gap-3">
           <ShopFilter
-            stores={availableStores}
             value={storeFilter}
             onChange={setStoreFilter}
           />
@@ -283,7 +283,7 @@ export default function DashboardPage() {
                     type="monotone"
                     dataKey={`${store}_sales`}
                     name={store}
-                    stroke={SHOP_COLORS[getShopKey(store)] || ['#1e3a5f', '#3b82f6', '#f59e0b'][i % 3]}
+                    stroke={getShopColor(store)}
                     strokeWidth={2}
                   />
                 ))}
@@ -325,7 +325,7 @@ export default function DashboardPage() {
                       type="monotone"
                       dataKey={`${store}_income`}
                       name={`${store}净收入`}
-                      stroke={SHOP_COLORS[getShopKey(store)] || ['#10b981', '#8b5cf6', '#f59e0b'][i % 3]}
+                      stroke={getShopColor(store)}
                       strokeWidth={2}
                     />
                   ))}
@@ -392,8 +392,8 @@ export default function DashboardPage() {
                       <td className="py-2 px-2">
                         <span className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full"
                           style={{
-                            backgroundColor: `${SHOP_COLORS[getShopKey(d.storeName)] || '#6b7280'}15`,
-                            color: SHOP_COLORS[getShopKey(d.storeName)] || '#6b7280',
+                            backgroundColor: `${getShopColor(d.storeName)}15`,
+                            color: getShopColor(d.storeName),
                           }}
                         >
                           {d.storeName || '一店'}

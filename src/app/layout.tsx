@@ -4,6 +4,7 @@ import './globals.css';
 import { AppSidebar } from '@/components/layout/app-sidebar';
 import { SidebarProvider, SidebarInset, SidebarTrigger } from '@/components/ui/sidebar';
 import { Separator } from '@/components/ui/separator';
+import { Providers } from './providers';
 
 export const metadata: Metadata = {
   title: {
@@ -25,6 +26,7 @@ export default function RootLayout({
       <body className={`antialiased`}>
         {isDev && <Inspector />}
         <SidebarProvider>
+          <Providers>
           <AppSidebar />
           <SidebarInset>
             <header className="flex h-14 shrink-0 items-center gap-2 border-b px-4 bg-white">
@@ -41,6 +43,7 @@ export default function RootLayout({
               {children}
             </main>
           </SidebarInset>
+          </Providers>
         </SidebarProvider>
       </body>
     </html>

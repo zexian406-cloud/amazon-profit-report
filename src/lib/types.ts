@@ -301,42 +301,31 @@ export const DEFAULT_STORES: StoreConfig[] = [
   { name: '三店', currency: 'USD', subscriptionFee: 39.99, otherSharedFees: 0 },
 ];
 
-// 店铺类型
-export type ShopKey = 'shop1' | 'shop2' | 'shop3';
-
-export const SHOPS: { key: ShopKey; label: string }[] = [
-  { key: 'shop1', label: '一店' },
-  { key: 'shop2', label: '二店' },
-  { key: 'shop3', label: '三店' },
-];
-
-export const SHOP_LABELS: Record<ShopKey, string> = {
-  shop1: '一店',
-  shop2: '二店',
-  shop3: '三店',
-};
-
-export const SHOP_KEYS: Record<string, ShopKey> = {
-  '一店': 'shop1',
-  '二店': 'shop2',
-  '三店': 'shop3',
-};
-
 export const ALL_STORES = '全部' as const;
 export type StoreFilter = string | typeof ALL_STORES;
 
-export const SHOP_COLORS: Record<ShopKey, string> = {
-  shop1: '#1e3a5f',
-  shop2: '#3b82f6',
-  shop3: '#10b981',
-};
+export const DEFAULT_SHOP_COLORS: string[] = [
+  '#1e3a5f', '#3b82f6', '#10b981', '#f59e0b', '#ef4444',
+  '#8b5cf6', '#ec4899', '#14b8a6', '#f97316', '#6366f1',
+];
+
+export function getShopColor(indexOrName: number | string): string {
+  if (typeof indexOrName === 'number') {
+    return DEFAULT_SHOP_COLORS[indexOrName % DEFAULT_SHOP_COLORS.length];
+  }
+  let hash = 0;
+  for (let i = 0; i < indexOrName.length; i++) {
+    hash = ((hash << 5) - hash) + indexOrName.charCodeAt(i);
+  }
+  return DEFAULT_SHOP_COLORS[Math.abs(hash) % DEFAULT_SHOP_COLORS.length];
+}
 
 export function getShopLabel(storeName: string): string {
   return storeName || '一店';
 }
 
-export function getShopKey(storeName: string): ShopKey {
-  return SHOP_KEYS[storeName] || 'shop1';
+export function getShopKey(storeName: string): string {
+  return `shop_${storeName}`;
 }
 
 export const FEE_CATEGORY_MAP: Record<string, string> = {
@@ -357,3 +346,4 @@ export const FEE_CATEGORY_MAP: Record<string, string> = {
   'Vine注册费': 'Other',
   'Vine': 'Other',
 };
+
