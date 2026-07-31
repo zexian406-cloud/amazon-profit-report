@@ -649,6 +649,35 @@ export default function ImportPage() {
                   </CardContent>
                 </Card>
 
+                {/* 确认导入按钮 */}
+                <div className="flex items-center gap-3 p-4 bg-amber-50 border border-amber-200 rounded-lg">
+                  <div className="flex-1">
+                    <p className="text-sm font-medium text-amber-800">确认导入数据</p>
+                    <p className="text-xs text-amber-600">
+                      确认后系统将自动计算利润表，并进入利润表页面。你还可以在「多报表数据」标签页上传其他补充报表后再合并计算。
+                    </p>
+                  </div>
+                  <Button
+                    onClick={handleCalculate}
+                    disabled={calculating}
+                    size="default"
+                    className="bg-amber-600 hover:bg-amber-700 text-white"
+                  >
+                    {calculating ? (
+                      <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> 计算中...</>
+                    ) : (
+                      <><CheckCircle2 className="mr-2 h-4 w-4" /> 确认导入</>
+                    )}
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="default"
+                    onClick={() => setActiveTab('reports')}
+                  >
+                    先上传其他报表
+                  </Button>
+                </div>
+
                 <Card>
                   <CardHeader>
                     <CardTitle className="text-base">交易分类明细</CardTitle>
@@ -1015,8 +1044,11 @@ export default function ImportPage() {
               </CardHeader>
               <CardContent>
                 {skuRows.length === 0 ? (
-                  <div className="text-center py-8 text-muted-foreground">
-                    请先在「多报表数据」页面点击合并计算按钮
+                  <div className="text-center py-8">
+                    <p className="text-muted-foreground mb-2">尚未计算利润表</p>
+                    <p className="text-sm text-muted-foreground">
+                      请先在「交易明细预览」标签页点击 <strong>确认导入</strong> 按钮，或切换到「多报表数据」标签页上传补充报表后再合并计算
+                    </p>
                   </div>
                 ) : (
                   <div className="overflow-x-auto max-h-[600px] overflow-y-auto">
