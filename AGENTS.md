@@ -18,7 +18,7 @@
 │   │   ├── page.tsx        # 首页看板
 │   │   ├── layout.tsx      # 根布局（含侧边栏）
 │   │   ├── globals.css     # 全局样式
-│   │   ├── import/         # 数据导入页
+│   │   ├── import/         # 数据导入页（多报表上传）
 │   │   ├── profit/         # SKU利润表页
 │   │   ├── history/        # 历史对比页
 │   │   └── fees/           # 费用分析页
@@ -28,10 +28,11 @@
 │   ├── hooks/              # 自定义 Hooks
 │   └── lib/                # 工具库
 │       ├── utils.ts        # 通用工具函数
-│       ├── types.ts        # 类型定义
+│       ├── types.ts        # 类型定义（含多报表类型）
 │       ├── idb.ts          # IndexedDB 操作
-│       ├── excel-parser.ts # Excel 解析
-│       └── profit-calculator.ts # 利润计算
+│       ├── excel-parser.ts # 交易明细Excel解析
+│       ├── report-parser.ts # 多报表解析器（结算/仓储/广告/退货）
+│       └── profit-calculator.ts # 利润计算（支持多报表合并）
 ├── DESIGN.md               # 设计规范
 ├── next.config.ts          # Next.js 配置
 ├── package.json            # 项目依赖管理
@@ -41,12 +42,37 @@
 ### 项目说明
 
 这是一个亚马逊利润报表自动生成工具，核心功能：
-- **数据上传**：解析亚马逊交易明细Excel（settlement报告）
+- **数据上传**：支持5种报表类型（交易明细/结算报告/仓储费报告/广告报告/退货报告）
+- **自动识别**：根据列名特征智能判断报表类型
 - **自动归类**：按交易类型（Order/Refund/FBA Fee等）分类
+- **多报表合并**：多种报表数据自动合并计算，数据来源标注
 - **SKU利润表**：30+列明细，按SKU维度汇总
 - **多Sheet导出**：SKU利润表 + 共享费用 + 全局收支核对
 - **历史记录**：IndexedDB本地存储，按月保存
 - **可视化**：趋势图表 (recharts)
+
+### 核心文件说明
+
+| 文件 | 说明 |
+|------|------|
+| `src/lib/types.ts` | 全局类型定义，含 ReportType、ReportMeta、SettlementReport 等 |
+| `src/lib/excel-parser.ts` | 交易明细Excel解析，含列名归一化、交易类型识别 |
+| `src/lib/report-parser.ts` | 多报表解析器：结算报告/仓储费报告/广告报告/退货报告 + 自动识别 |
+| `src/lib/profit-calculator.ts` | 利润计算，支持多报表数据合并 |
+| `src/lib/idb.ts` | IndexedDB 本地存储操作 |
+| `src/app/import/page.tsx` | 数据导入页，含报表类型选择器、已上传报表列表、解析预览 |
+
+### 多报表支持说明
+
+**报表类型**：`transaction`(交易明细) / `settlement`(结算报告) / `storage`(仓储费) / `advertising`(广告报告) / `return`(退货报告)
+
+**自动识别**：根据文件列名特征匹配，支持 `auto` 模式自动判断
+
+**数据合并**：
+- 交易明细中的仓储费 + 仓储费报告中的仓储费 = 总仓储费
+- 交易明细中的广告费 + 广告报告中的广告费 = 总广告费
+- 退货报告中的退款数据与交易明细交叉验证
+- 结算报告中的汇总数据与利润表做交叉验证
 
 ### 核心依赖
 - `xlsx` - Excel解析与生成

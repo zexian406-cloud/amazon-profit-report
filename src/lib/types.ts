@@ -11,6 +11,31 @@ export type TransactionType =
   | 'ReturnFee'       // 退货处理费
   | 'Other';          // 其他
 
+// 报表类型
+export type ReportType =
+  | 'transaction'    // 交易明细
+  | 'settlement'     // 结算报告
+  | 'storage'        // 仓储费报告
+  | 'advertising'    // 广告报告
+  | 'return';        // 退货报告
+
+// 报表类型中文名
+export const REPORT_TYPE_LABELS: Record<ReportType, string> = {
+  transaction: '交易明细',
+  settlement: '结算报告',
+  storage: '仓储费报告',
+  advertising: '广告报告',
+  return: '退货报告',
+};
+
+// 报表类型检测特征
+export interface ReportTypeFeature {
+  type: ReportType;
+  keywords: string[];
+  requiredColumns: string[][]; // 多组可选列，匹配任一即可
+  priority: number; // 匹配优先级，越高越优先
+}
+
 // 原始交易记录
 export interface Transaction {
   id?: number;
@@ -71,6 +96,12 @@ export interface SKUProfitRow {
   totalFee: number;
   netIncome: number;
   profitMargin: number;    // 百分比
+  // 数据来源标注
+  dataSources?: {
+    storageFee: string;  // 'transaction' | 'storage_report' | 'merged'
+    adFee: string;       // 'transaction' | 'ad_report' | 'merged'
+    returnFee: string;   // 'transaction' | 'return_report' | 'merged'
+  };
 }
 
 // 共享费用（无法归属到单个SKU的费用）
@@ -81,6 +112,7 @@ export interface SharedFee {
   category: string;    // 如: 广告费, Vine注册费, 订阅费, 其他
   totalAmount: number;
   description: string;
+  source?: string;     // 数据来源: 'transaction' | 'settlement' | 'ad_report' | 'storage_report'
 }
 
 // 全局收支核对
@@ -92,6 +124,8 @@ export interface Reconciliation {
   totalNetIncome: number;     // 净收入 = SKU净收入 - 共享费用
   grandTotalFromBill: number; // 原始账单总计
   difference: number;         // 差异
+  settlementTotal?: number;   // 结算报告总额（如有）
+  settlementDiff?: number;    // 与结算报告的差异
 }
 
 // 历史月数据
@@ -104,7 +138,91 @@ export interface HistoryMonth {
   skuCount: number;
 }
 
-// 解析结果
+// ====== 新增报表类型 ======
+
+// 结算报告解析结果
+export interface SettlementReport {
+  month: string;
+  storeName: string;
+  settlementId: string;
+  periodStart: string;
+  periodEnd: string;
+  totalAmount: number;
+  transactionCount: number;
+  feeSummary: Record<string, number>; // 费用分类汇总
+  rawData: Record<string, string>[];
+}
+
+// 仓储费报告条目
+export interface StorageFeeItem {
+  sku: string;
+  asin: string;
+  storageDate: string;
+  volumeCubicFeet: number;
+  rate: number;
+  storageFee: number;
+  month: string;
+  storeName: string;
+}
+
+// 广告报告条目
+export interface AdReportItem {
+  campaignName: string;
+  campaignType: string; // SP / SB / SD
+  sku: string;
+  asin: string;
+  impressions: number;
+  clicks: number;
+  spend: number;
+  sales: number;
+  orders: number;
+  acos: number;
+  month: string;
+  storeName: string;
+}
+
+// 退货报告条目
+export interface ReturnReportItem {
+  sku: string;
+  asin: string;
+  productName: string;
+  returnQuantity: number;
+  refundAmount: number;
+  returnReason: string;
+  returnDate: string;
+  month: string;
+  storeName: string;
+}
+
+// 已上传报表元信息
+export interface UploadedReport {
+  id: string;
+  fileName: string;
+  reportType: ReportType;
+  month: string;
+  storeName: string;
+  uploadTime: string;
+  rowCount: number;
+  status: 'parsed' | 'merged';
+}
+
+// 多报表解析结果
+export interface MultiReportResult {
+  month: string;
+  storeName: string;
+  transactions: Transaction[];
+  sharedFees: SharedFee[];
+  reconciliation: Reconciliation | null;
+  // 各报表独立数据
+  settlementReport?: SettlementReport;
+  storageFeeItems?: StorageFeeItem[];
+  adReportItems?: AdReportItem[];
+  returnReportItems?: ReturnReportItem[];
+  // 已上传报表清单
+  uploadedReports: UploadedReport[];
+}
+
+// 解析结果（兼容旧版）
 export interface ParseResult {
   month: string;
   storeName: string;

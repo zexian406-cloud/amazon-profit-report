@@ -1,10 +1,30 @@
-import { Transaction, SKUProfitRow, SharedFee, Reconciliation } from './types';
+import { Transaction, SKUProfitRow, SharedFee, Reconciliation, StorageFeeItem, AdReportItem, ReturnReportItem, SettlementReport } from './types';
 
 export function calculateSKUProfit(
   transactions: Transaction[],
   sharedFees: SharedFee[],
   month: string,
   storeName: string
+): { skuRows: SKUProfitRow[]; reconciliation: Reconciliation } {
+  return calculateSKUProfitWithReports(
+    transactions, sharedFees, month, storeName,
+    undefined, undefined, undefined, undefined
+  );
+}
+
+/**
+ * 多报表合并利润计算
+ * 支持将仓储费报告、广告报告、退货报告的数据与交易明细合并
+ */
+export function calculateSKUProfitWithReports(
+  transactions: Transaction[],
+  sharedFees: SharedFee[],
+  month: string,
+  storeName: string,
+  storageFeeItems?: StorageFeeItem[],
+  adReportItems?: AdReportItem[],
+  returnReportItems?: ReturnReportItem[],
+  settlementReport?: SettlementReport,
 ): { skuRows: SKUProfitRow[]; reconciliation: Reconciliation } {
   // 按SKU分组
   const skuGroups = new Map<string, Transaction[]>();
@@ -14,6 +34,40 @@ export function calculateSKUProfit(
       skuGroups.set(key, []);
     }
     skuGroups.get(key)!.push(t);
+  }
+
+  // 构建SKU→仓储费映射（来自仓储费报告）
+  const storageFeeBySKU = new Map<string, number>();
+  if (storageFeeItems) {
+    for (const item of storageFeeItems) {
+      const current = storageFeeBySKU.get(item.sku) || 0;
+      storageFeeBySKU.set(item.sku, current + item.storageFee);
+    }
+  }
+
+  // 构建SKU→广告费映射（来自广告报告）
+  const adFeeBySKU = new Map<string, number>();
+  let totalAdSpendNoSKU = 0;
+  if (adReportItems) {
+    for (const item of adReportItems) {
+      if (item.sku && item.sku !== 'N/A' && item.sku !== '') {
+        const current = adFeeBySKU.get(item.sku) || 0;
+        adFeeBySKU.set(item.sku, current + item.spend);
+      } else {
+        totalAdSpendNoSKU += item.spend;
+      }
+    }
+  }
+
+  // 构建SKU→退货映射（来自退货报告）
+  const returnBySKU = new Map<string, { quantity: number; amount: number }>();
+  if (returnReportItems) {
+    for (const item of returnReportItems) {
+      const current = returnBySKU.get(item.sku) || { quantity: 0, amount: 0 };
+      current.quantity += item.returnQuantity;
+      current.amount += Math.abs(item.refundAmount);
+      returnBySKU.set(item.sku, current);
+    }
   }
 
   const skuRows: SKUProfitRow[] = [];
@@ -40,10 +94,8 @@ export function calculateSKUProfit(
     const refundAmount = Math.round(refunds.reduce((s, t) => s + t.totalAmount, 0) * 100) / 100;
     const netSales = Math.round((grossSales + refundAmount) * 100) / 100;
 
-    // 佣金（从订单和退款中分离）
-    // 在亚马逊报告中，佣金通常包含在交易金额中
-    // 实际应按比例估算，这里简化处理
-    const commissionRatio = 0.15; // 假设平均佣金率15%
+    // 佣金
+    const commissionRatio = 0.15;
     const grossCommission = Math.round(grossSales * commissionRatio * 100) / 100;
     const refundCommission = Math.round(Math.abs(refundAmount) * commissionRatio * 100) / 100;
     const netCommission = Math.round((grossCommission - refundCommission) * 100) / 100;
@@ -53,36 +105,95 @@ export function calculateSKUProfit(
     const refundFBAFee = Math.round(Math.abs(refunds.filter(t => t.description.toLowerCase().includes('fba')).reduce((s, t) => s + t.totalAmount, 0)) * 100) / 100;
     const netFBAFee = Math.round((grossFBAFee + refundFBAFee) * 100) / 100;
 
-    // 仓储费
-    const storageFee = Math.round(storageFees.reduce((s, t) => s + t.totalAmount, 0) * 100) / 100;
+    // ====== 多报表数据合并 ======
 
-    // 广告费
-    const adFee = Math.round(adFees.reduce((s, t) => s + t.totalAmount, 0) * 100) / 100;
+    // 仓储费：优先使用仓储费报告数据，否则用交易明细数据
+    let storageFee: number;
+    let storageFeeSource: string;
+    const reportStorageFee = storageFeeBySKU.get(sku);
+    const txnStorageFee = Math.round(Math.abs(storageFees.reduce((s, t) => s + t.totalAmount, 0)) * 100) / 100;
+
+    if (reportStorageFee !== undefined && reportStorageFee > 0) {
+      storageFee = Math.round(reportStorageFee * 100) / 100;
+      storageFeeSource = 'storage_report';
+    } else if (txnStorageFee > 0) {
+      storageFee = txnStorageFee;
+      storageFeeSource = 'transaction';
+    } else {
+      // 合并：两者都有则相加
+      storageFee = txnStorageFee;
+      storageFeeSource = 'transaction';
+    }
+    // 如果两者都有，取较大值或相加（这里取相加，表示总仓储费）
+    if (reportStorageFee !== undefined && reportStorageFee > 0 && txnStorageFee > 0) {
+      storageFee = Math.round((reportStorageFee + txnStorageFee) * 100) / 100;
+      storageFeeSource = 'merged';
+    }
+
+    // 广告费：优先使用广告报告数据，否则用交易明细
+    let adFee: number;
+    let adFeeSource: string;
+    const reportAdFee = adFeeBySKU.get(sku);
+    const txnAdFee = Math.round(Math.abs(adFees.reduce((s, t) => s + t.totalAmount, 0)) * 100) / 100;
+
+    if (reportAdFee !== undefined && reportAdFee > 0) {
+      adFee = Math.round(reportAdFee * 100) / 100;
+      adFeeSource = 'ad_report';
+    } else if (txnAdFee > 0) {
+      adFee = txnAdFee;
+      adFeeSource = 'transaction';
+    } else {
+      adFee = 0;
+      adFeeSource = 'transaction';
+    }
+    // 合并
+    if (reportAdFee !== undefined && reportAdFee > 0 && txnAdFee > 0) {
+      adFee = Math.round((reportAdFee + txnAdFee) * 100) / 100;
+      adFeeSource = 'merged';
+    }
+
+    // 退货处理费：优先使用退货报告数据
+    let returnFee: number;
+    let returnFeeSource: string;
+    const reportReturn = returnBySKU.get(sku);
+    const txnReturnFee = Math.round(Math.abs(returnFees.reduce((s, t) => s + t.totalAmount, 0)) * 100) / 100;
+
+    if (reportReturn && reportReturn.amount > 0) {
+      returnFee = Math.round(reportReturn.amount * 100) / 100;
+      returnFeeSource = 'return_report';
+    } else if (txnReturnFee > 0) {
+      returnFee = txnReturnFee;
+      returnFeeSource = 'transaction';
+    } else {
+      returnFee = 0;
+      returnFeeSource = 'transaction';
+    }
+    if (reportReturn && reportReturn.amount > 0 && txnReturnFee > 0) {
+      returnFee = Math.round((reportReturn.amount + txnReturnFee) * 100) / 100;
+      returnFeeSource = 'merged';
+    }
 
     // 入库配置费
-    const inboundFee = Math.round(inboundFees.reduce((s, t) => s + t.totalAmount, 0) * 100) / 100;
-
-    // 退货处理费
-    const returnFee = Math.round(returnFees.reduce((s, t) => s + t.totalAmount, 0) * 100) / 100;
+    const inboundFee = Math.round(Math.abs(inboundFees.reduce((s, t) => s + t.totalAmount, 0)) * 100) / 100;
 
     // 其他费用（调整等）
-    const otherSkuFee = Math.round((adjustments.reduce((s, t) => s + t.totalAmount, 0) + otherFees.reduce((s, t) => s + t.totalAmount, 0)) * 100) / 100;
+    const otherSkuFee = Math.round(Math.abs(adjustments.reduce((s, t) => s + t.totalAmount, 0) + otherFees.reduce((s, t) => s + t.totalAmount, 0)) * 100) / 100;
 
     // 订阅费和均摊费用将在后续处理
     const subscriptionFee = 0;
     const otherFee = 0;
 
-    // 费用总计
+    // 费用总计（不含均摊）
     const totalFee = Math.round((
       Math.abs(netCommission) +
       Math.abs(netFBAFee) +
-      Math.abs(storageFee) +
-      Math.abs(adFee) +
+      storageFee +
+      adFee +
       Math.abs(inboundFee) +
-      Math.abs(returnFee) +
+      returnFee +
       Math.abs(subscriptionFee) +
       Math.abs(otherFee) +
-      Math.abs(otherSkuFee)
+      otherSkuFee
     ) * 100) / 100;
 
     // 净收入
@@ -118,6 +229,11 @@ export function calculateSKUProfit(
       totalFee,
       netIncome,
       profitMargin,
+      dataSources: {
+        storageFee: storageFeeSource,
+        adFee: adFeeSource,
+        returnFee: returnFeeSource,
+      },
     });
   }
 
@@ -143,10 +259,10 @@ export function calculateSKUProfit(
       row.totalFee = Math.round((
         Math.abs(row.netCommission) +
         Math.abs(row.netFBAFee) +
-        Math.abs(row.storageFee) +
-        Math.abs(row.adFee) +
+        row.storageFee +
+        row.adFee +
         Math.abs(row.inboundFee) +
-        Math.abs(row.returnFee) +
+        row.returnFee +
         Math.abs(row.subscriptionFee) +
         Math.abs(row.otherFee)
       ) * 100) / 100;
@@ -169,6 +285,14 @@ export function calculateSKUProfit(
     sharedFees.reduce((s, f) => s + f.totalAmount, 0)
   ) / 100;
 
+  // 如果有结算报告，进行交叉验证
+  let settlementTotal: number | undefined;
+  let settlementDiff: number | undefined;
+  if (settlementReport) {
+    settlementTotal = settlementReport.totalAmount;
+    settlementDiff = Math.round((totalNetIncome - settlementTotal) * 100) / 100;
+  }
+
   const reconciliation: Reconciliation = {
     month,
     storeName,
@@ -177,6 +301,8 @@ export function calculateSKUProfit(
     totalNetIncome,
     grandTotalFromBill: Math.round(grandTotalFromBill * 100) / 100,
     difference: Math.round((grandTotalFromBill - totalNetIncome) * 100) / 100,
+    settlementTotal,
+    settlementDiff,
   };
 
   return { skuRows, reconciliation };
