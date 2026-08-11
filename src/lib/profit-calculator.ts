@@ -143,9 +143,9 @@ export function calculateSKUProfitWithReports(
 
     // ====== 收入部分 ======
 
-    // 商品销售收入：从订单中提取，排除运费
+    // 商品销售收入：从订单中提取，排除运费、佣金、促销折扣
     const productSales = Math.round(orders
-      .filter(t => !descContains(t.description, 'shipping', '运费', 'delivery', 'liquidation', '清算'))
+      .filter(t => !descContains(t.description, 'shipping', '运费', 'delivery', 'liquidation', '清算', 'commission', '佣金', 'referral', 'promo', '促销', '优惠', 'rebate', '折扣'))
       .reduce((s, t) => s + t.totalAmount, 0) * 100) / 100;
 
     // 运费收入
@@ -175,10 +175,14 @@ export function calculateSKUProfitWithReports(
       .filter(t => descContains(t.description, 'promo', '促销', '优惠', '折扣'))
       .reduce((s, t) => s + t.totalAmount, 0)) * 100) / 100;
 
-    // 促销折扣
-    const promoDiscount = Math.round(Math.abs(adjustments
+    // 促销折扣（从订单和调整中提取）
+    const orderPromoDiscount = Math.round(Math.abs(orders
+      .filter(t => descContains(t.description, 'promo', '促销', '折扣', '优惠', 'rebate'))
+      .reduce((s, t) => s + t.totalAmount, 0)) * 100) / 100;
+    const adjustmentPromoDiscount = Math.round(Math.abs(adjustments
       .filter(t => descContains(t.description, 'promo', '促销', '折扣', '优惠'))
       .reduce((s, t) => s + t.totalAmount, 0)) * 100) / 100;
+    const promoDiscount = Math.round((orderPromoDiscount + adjustmentPromoDiscount) * 100) / 100;
 
     // 净销售额 = 商品销售收入 + 运费收入 + 清算残值收入 - 退款-商品 - 退款-运费 - 退款-促销回冲 - 促销折扣
     const netSales = Math.round((productSales + shippingIncome + liquidationValue - refundProduct - refundShipping - refundPromo - promoDiscount) * 100) / 100;

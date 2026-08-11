@@ -5,20 +5,43 @@ import { Transaction, TransactionType, ParseResult, SharedFee, FEE_CATEGORY_MAP 
 function detectTransactionType(row: Record<string, string>): TransactionType {
   const desc = (row['描述'] || row['Description'] || row['description'] || '').toLowerCase();
   const type = (row['类型'] || row['Type'] || row['type'] || '').toLowerCase();
-  const amount = parseFloat(row['金额'] || row['Amount'] || row['amount'] || '0');
 
-  // 按类型判断
-  if (type.includes('order') || type.includes('订单')) {
-    return amount < 0 ? 'Refund' : 'Order';
-  }
+  // 按Amazon类型判断（优先使用type列，不依赖金额正负）
   if (type.includes('refund') || type.includes('退款') || type.includes('退货')) {
     return 'Refund';
   }
   if (type.includes('adjustment') || type.includes('调整')) {
     return 'Adjustment';
   }
-
-  // ====== 按描述逐层判断 ======
+  if (type.includes('service fee') || type.includes('servicefee')) {
+    // Amazon 服务费
+    if (desc.includes('subscription') || desc.includes('订阅') || desc.includes('专业销售')) {
+      return 'SubscriptionFee';
+    }
+    if (desc.includes('storage') || desc.includes('仓储')) {
+      return 'StorageFee';
+    }
+    return 'Other';
+  }
+  if (type.includes('transfer')) {
+    return 'Other';
+  }
+  // Order类型：Amazon订单中包含正负金额项目（Product Sales正、Commission负等）
+  // 不能用金额正负判断是否退款，应保持为Order，由利润计算器按描述分类
+  if (type.includes('order') || type.includes('订单')) {
+    // 检查是否是FBA费用（在Order类型中的FBA相关费用）
+    if (desc.includes('fba') || desc.includes('fulfillment') || desc.includes('pick') || desc.includes('pack')) {
+      if (desc.includes('return') || desc.includes('退货处理')) return 'ReturnFee';
+      if (desc.includes('inbound') || desc.includes('入库')) return 'InboundFee';
+      return 'FBAFee';
+    }
+    // 检查是否是仓储费
+    if (desc.includes('storage') || desc.includes('仓储')) {
+      return 'StorageFee';
+    }
+    // 佣金、产品销售、运费等都保持为Order类型
+    return 'Order';
+  }
 
   // 1. 仓储费
   if (desc.includes('storage') || desc.includes('仓储')) {
