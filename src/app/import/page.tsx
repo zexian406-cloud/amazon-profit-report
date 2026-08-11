@@ -348,7 +348,7 @@ export default function ImportPage() {
     setSheetTypeOverrides(prev => ({ ...prev, [sheetName]: newType }));
   }
 
-  // 确认多表格导入
+  // 确认多表格导入 - 自动计算利润并保存
   async function handleConfirmMultiSheet() {
     if (!multiSheetFile) return;
     setMultiSheetParsing(true);
@@ -358,50 +358,91 @@ export default function ImportPage() {
       const store = uploadStore || '一店';
       const result = await parseMultiSheetFile(multiSheetFile, store, sheetTypeOverrides);
 
-      // 设置交易明细结果
-      if (result.transactions.length > 0) {
-        const orderTotal = result.transactions.filter(t => t.type === 'Order').reduce((s, t) => s + t.totalAmount, 0);
-        const refundTotal = result.transactions.filter(t => t.type === 'Refund').reduce((s, t) => s + t.totalAmount, 0);
-        const skuNetIncome = orderTotal + refundTotal;
-        const sharedFeeTotal = result.sharedFees.reduce((s, f) => s + f.totalAmount, 0);
+      if (result.transactions.length === 0) {
+        setError('未识别到交易明细数据，请检查文件内容');
+        setMultiSheetParsing(false);
+        return;
+      }
 
-        const parseResult: ParseResult = {
+      // 构建解析结果
+      const orderTotal = result.transactions.filter(t => t.type === 'Order').reduce((s, t) => s + t.totalAmount, 0);
+      const refundTotal = result.transactions.filter(t => t.type === 'Refund').reduce((s, t) => s + t.totalAmount, 0);
+      const skuNetIncome = orderTotal + refundTotal;
+      const sharedFeeTotal = result.sharedFees.reduce((s, f) => s + f.totalAmount, 0);
+
+      const parseResult: ParseResult = {
+        month: result.month,
+        storeName: store,
+        transactions: result.transactions,
+        sharedFees: result.sharedFees,
+        reconciliation: {
           month: result.month,
           storeName: store,
-          transactions: result.transactions,
-          sharedFees: result.sharedFees,
-          reconciliation: {
-            month: result.month,
-            storeName: store,
-            skuNetIncome: Math.round(skuNetIncome * 100) / 100,
-            sharedFeeTotal: Math.round(sharedFeeTotal * 100) / 100,
-            totalNetIncome: Math.round((skuNetIncome + sharedFeeTotal) * 100) / 100,
-            grandTotalFromBill: Math.round(skuNetIncome * 100) / 100,
-            difference: 0,
-          },
-        };
-        setTransactionResult(parseResult);
-        setPreviewData(result.transactions.slice(0, 50).map(t => t.rawRow));
-        setPreviewHeaders(Object.keys(result.transactions[0]?.rawRow || {}));
-      }
+          skuNetIncome: Math.round(skuNetIncome * 100) / 100,
+          sharedFeeTotal: Math.round(sharedFeeTotal * 100) / 100,
+          totalNetIncome: Math.round((skuNetIncome + sharedFeeTotal) * 100) / 100,
+          grandTotalFromBill: Math.round(skuNetIncome * 100) / 100,
+          difference: 0,
+        },
+      };
 
-      // 设置仓储费
-      if (result.storageFeeItems.length > 0) {
-        setStorageFeeItems(result.storageFeeItems);
-      }
-
-      // 设置促销费用
-      if (result.promotionFeeItems.length > 0) {
-        setPromotionFeeItems(result.promotionFeeItems);
-      }
-
-      // 设置已上传报表列表
+      // 设置状态
+      setTransactionResult(parseResult);
+      setPreviewData(result.transactions.slice(0, 50).map(t => t.rawRow));
+      setPreviewHeaders(Object.keys(result.transactions[0]?.rawRow || {}));
+      if (result.storageFeeItems.length > 0) setStorageFeeItems(result.storageFeeItems);
+      if (result.promotionFeeItems.length > 0) setPromotionFeeItems(result.promotionFeeItems);
       setUploadedReports(result.uploadedReports);
-      setActiveTab('preview');
       setMultiSheetResults([]);
       setMultiSheetFile(null);
+
+      // 自动计算利润
+      const extraFees = extractSharedFeesFromReports(
+        settlementReport,
+        adReportItems,
+        result.storageFeeItems.length > 0 ? result.storageFeeItems : storageFeeItems,
+        result.month,
+        store,
+      );
+      const allSharedFees = [...result.sharedFees, ...extraFees];
+      const currentShop = shops.find(s => s.name === store);
+      const defaultManager = currentShop?.defaultManager || '';
+      const { skuRows: rows, reconciliation: recon } = calculateSKUProfitWithReports(
+        result.transactions,
+        allSharedFees,
+        result.month,
+        store,
+        result.storageFeeItems.length > 0 ? result.storageFeeItems : storageFeeItems,
+        adReportItems,
+        returnReportItems,
+        settlementReport,
+        productCostItems,
+        deliveryFeeItems,
+        defaultManager,
+        managerMappings,
+        result.promotionFeeItems.length > 0 ? result.promotionFeeItems : promotionFeeItems,
+      );
+      setSkuRows(rows);
+      setReconciliation(recon);
+      setUploadedReports(result.uploadedReports.map(r => ({ ...r, status: 'merged' as const })));
+
+      // 自动保存到 IndexedDB
+      const monthlyData = {
+        month: result.month,
+        storeName: store,
+        importDate: new Date().toISOString(),
+        fileName: multiSheetFile.name,
+        transactions: result.transactions,
+      };
+      await saveMonthlyData(monthlyData);
+      await saveSharedFees(allSharedFees);
+      await saveProfitReport(rows);
+      setSaved(true);
+
+      // 跳转到利润表页面
+      setActiveTab('profit');
     } catch (err) {
-      setError(`多表格解析失败: ${err instanceof Error ? err.message : '未知错误'}`);
+      setError(`多表格导入失败: ${err instanceof Error ? err.message : '未知错误'}`);
     } finally {
       setMultiSheetParsing(false);
     }
