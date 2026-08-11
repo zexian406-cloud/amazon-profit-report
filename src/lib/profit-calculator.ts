@@ -1,4 +1,4 @@
-import { Transaction, SKUProfitRow, SharedFee, Reconciliation, StorageFeeItem, AdReportItem, ReturnReportItem, SettlementReport, ProductCostItem, DeliveryFeeItem, ManagerMapping } from './types';
+import { Transaction, SKUProfitRow, SharedFee, Reconciliation, StorageFeeItem, AdReportItem, ReturnReportItem, SettlementReport, ProductCostItem, DeliveryFeeItem, ManagerMapping, PromotionFeeItem } from './types';
 
 export function calculateSKUProfit(
   transactions: Transaction[],
@@ -11,7 +11,7 @@ export function calculateSKUProfit(
   return calculateSKUProfitWithReports(
     transactions, sharedFees, month, storeName,
     undefined, undefined, undefined, undefined, undefined, undefined,
-    defaultManager, managerMappings,
+    defaultManager, managerMappings, undefined,
   );
 }
 
@@ -37,6 +37,7 @@ export function calculateSKUProfitWithReports(
   deliveryFeeItems?: DeliveryFeeItem[],
   defaultManager: string = '',
   managerMappings?: ManagerMapping[],
+  promotionFeeItems?: PromotionFeeItem[],
 ): { skuRows: SKUProfitRow[]; reconciliation: Reconciliation } {
   // 构建SKU→负责人映射
   const managerMap = new Map<string, string>();
@@ -101,6 +102,17 @@ export function calculateSKUProfitWithReports(
       deliveryFeeBySKU.set(item.sku, current + item.deliveryFee);
       const provider = item.carrier || '默认';
       providerTotals.set(provider, (providerTotals.get(provider) || 0) + item.deliveryFee);
+    }
+  }
+
+  // 促销费用分摊映射
+  const promotionFeeBySKU = new Map<string, number>();
+  if (promotionFeeItems) {
+    for (const item of promotionFeeItems) {
+      if (item.sku && item.sku !== 'N/A') {
+        const current = promotionFeeBySKU.get(item.sku) || 0;
+        promotionFeeBySKU.set(item.sku, current + Math.abs(item.totalFee));
+      }
     }
   }
 
@@ -334,12 +346,14 @@ export function calculateSKUProfitWithReports(
     const headHaul = 0;
     // 刷单费
     const fakeOrderFee = 0;
+    // 促销费用（从促销费用分摊表导入）
+    const promotionFee = Math.round((promotionFeeBySKU.get(sku) || 0) * 100) / 100;
 
     // 净收入计算
     // 净收入 = 净销售额 + 净佣金 + 净FBA费 - 仓储费合计 - 其他费用 - 外部成本
     const otherFeesTotal = liquidationFeeVal + inventoryCompensationVal + safeTClaimVal + refundOther + returnShippingFee + disposalFeeVal + inboundFee + removalFeeVal + subscriptionFee + otherAdjustment + fakeOrderFee;
     const totalDeliveryFee = Object.values(deliveryFeeByProvider).reduce((s, v) => s + v, 0);
-    const externalCosts = adFee + headHaul + productCost + totalDeliveryFee;
+    const externalCosts = adFee + headHaul + productCost + totalDeliveryFee + promotionFee;
 
     // 注意：净佣金和净FBA费已经是负数（支出）
     // 净销售额是正数，净佣金是负数（支出），净FBA费是负数（支出）

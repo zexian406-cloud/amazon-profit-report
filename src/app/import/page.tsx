@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import {
   Upload, FileSpreadsheet, AlertCircle, CheckCircle2, Loader2, Download,
   FileCheck, BarChart3, Undo2, Warehouse, File, Trash2, Layers, DollarSign, Truck, User,
+  Sparkles, Table, ChevronRight, RefreshCw,
 } from 'lucide-react';
 import { parseExcel } from '@/lib/excel-parser';
 import { calculateSKUProfitWithReports } from '@/lib/profit-calculator';
@@ -17,6 +18,7 @@ import {
   ReportType, REPORT_TYPE_LABELS, UploadedReport,
   SettlementReport, StorageFeeItem, AdReportItem, ReturnReportItem,
   ProductCostItem, DeliveryFeeItem, ManagerMapping, getShopColor,
+  PromotionFeeItem,
 } from '@/lib/types';
 import { useShops } from '@/hooks/use-shops';
 import { ShopFilter } from '@/components/layout/shop-filter';
@@ -24,6 +26,9 @@ import {
   parseReportByType, detectReportType, extractSharedFeesFromReports,
   getReportTypeColor, getReportTypeIcon,
 } from '@/lib/report-parser';
+import {
+  detectAllSheets, parseMultiSheetFile, SheetDetectionResult,
+} from '@/lib/multi-sheet-parser';
 import * as XLSX from 'xlsx';
 
 const REPORT_TYPES: { type: ReportType; icon: typeof File }[] = [
@@ -35,6 +40,7 @@ const REPORT_TYPES: { type: ReportType; icon: typeof File }[] = [
   { type: 'productCost', icon: DollarSign },
   { type: 'deliveryFee', icon: Truck },
   { type: 'managerMapping', icon: User },
+  { type: 'promotionFee', icon: Sparkles },
 ];
 
 function ReportTypeIcon({ type, className }: { type: ReportType; className?: string }) {
@@ -47,6 +53,7 @@ function ReportTypeIcon({ type, className }: { type: ReportType; className?: str
     productCost: DollarSign,
     deliveryFee: Truck,
     managerMapping: User,
+    promotionFee: Sparkles,
   };
   const Icon = iconMap[type] || File;
   return <Icon className={className || 'h-4 w-4'} />;
@@ -77,6 +84,13 @@ export default function ImportPage() {
   const [parsing, setParsing] = useState(false);
   const [calculating, setCalculating] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // 多表格检测状态
+  const [multiSheetResults, setMultiSheetResults] = useState<SheetDetectionResult[]>([]);
+  const [multiSheetParsing, setMultiSheetParsing] = useState(false);
+  const [multiSheetFile, setMultiSheetFile] = useState<File | null>(null);
+  const [sheetTypeOverrides, setSheetTypeOverrides] = useState<Record<string, ReportType>>({});
+  const [promotionFeeItems, setPromotionFeeItems] = useState<PromotionFeeItem[] | undefined>();
 
   // 计算结果
   const [skuRows, setSkuRows] = useState<SKUProfitRow[]>([]);
@@ -289,6 +303,108 @@ export default function ImportPage() {
     if (report.reportType === 'productCost') setProductCostItems(undefined);
     if (report.reportType === 'deliveryFee') setDeliveryFeeItems(undefined);
     if (report.reportType === 'managerMapping') setManagerMappings(undefined);
+    if (report.reportType === 'promotionFee') setPromotionFeeItems(undefined);
+  }
+
+  // ====== 多表格一键上传 ======
+
+  const handleMultiSheetFile = useCallback(async (file: File) => {
+    if (!file.name.endsWith('.xlsx') && !file.name.endsWith('.xls')) {
+      setError('多表格上传请使用 .xlsx 或 .xls 格式');
+      return;
+    }
+    setError(null);
+    setMultiSheetParsing(true);
+    setMultiSheetFile(file);
+    setSheetTypeOverrides({});
+
+    try {
+      const results = await detectAllSheets(file);
+      setMultiSheetResults(results);
+    } catch (err) {
+      setError(`多表格检测失败: ${err instanceof Error ? err.message : '未知错误'}`);
+    } finally {
+      setMultiSheetParsing(false);
+    }
+  }, []);
+
+  const handleMultiSheetDrop = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    const files = e.dataTransfer.files;
+    if (files.length > 0) {
+      handleMultiSheetFile(files[0]);
+    }
+  }, [handleMultiSheetFile]);
+
+  const handleMultiSheetSelect = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (files && files.length > 0) {
+      handleMultiSheetFile(files[0]);
+    }
+  }, [handleMultiSheetFile]);
+
+  // 修改单个sheet的检测类型
+  function changeSheetType(sheetName: string, newType: ReportType) {
+    setSheetTypeOverrides(prev => ({ ...prev, [sheetName]: newType }));
+  }
+
+  // 确认多表格导入
+  async function handleConfirmMultiSheet() {
+    if (!multiSheetFile) return;
+    setMultiSheetParsing(true);
+    setError(null);
+
+    try {
+      const store = uploadStore || '一店';
+      const result = await parseMultiSheetFile(multiSheetFile, store, sheetTypeOverrides);
+
+      // 设置交易明细结果
+      if (result.transactions.length > 0) {
+        const orderTotal = result.transactions.filter(t => t.type === 'Order').reduce((s, t) => s + t.totalAmount, 0);
+        const refundTotal = result.transactions.filter(t => t.type === 'Refund').reduce((s, t) => s + t.totalAmount, 0);
+        const skuNetIncome = orderTotal + refundTotal;
+        const sharedFeeTotal = result.sharedFees.reduce((s, f) => s + f.totalAmount, 0);
+
+        const parseResult: ParseResult = {
+          month: result.month,
+          storeName: store,
+          transactions: result.transactions,
+          sharedFees: result.sharedFees,
+          reconciliation: {
+            month: result.month,
+            storeName: store,
+            skuNetIncome: Math.round(skuNetIncome * 100) / 100,
+            sharedFeeTotal: Math.round(sharedFeeTotal * 100) / 100,
+            totalNetIncome: Math.round((skuNetIncome + sharedFeeTotal) * 100) / 100,
+            grandTotalFromBill: Math.round(skuNetIncome * 100) / 100,
+            difference: 0,
+          },
+        };
+        setTransactionResult(parseResult);
+        setPreviewData(result.transactions.slice(0, 50).map(t => t.rawRow));
+        setPreviewHeaders(Object.keys(result.transactions[0]?.rawRow || {}));
+      }
+
+      // 设置仓储费
+      if (result.storageFeeItems.length > 0) {
+        setStorageFeeItems(result.storageFeeItems);
+      }
+
+      // 设置促销费用
+      if (result.promotionFeeItems.length > 0) {
+        setPromotionFeeItems(result.promotionFeeItems);
+      }
+
+      // 设置已上传报表列表
+      setUploadedReports(result.uploadedReports);
+      setActiveTab('preview');
+      setMultiSheetResults([]);
+      setMultiSheetFile(null);
+    } catch (err) {
+      setError(`多表格解析失败: ${err instanceof Error ? err.message : '未知错误'}`);
+    } finally {
+      setMultiSheetParsing(false);
+    }
   }
 
   // 合并所有报表数据并计算利润
@@ -330,6 +446,7 @@ export default function ImportPage() {
         deliveryFeeItems,
         defaultManager,
         managerMappings,
+        promotionFeeItems,
       );
 
       setSkuRows(rows);
@@ -524,6 +641,168 @@ export default function ImportPage() {
         </CardContent>
       </Card>
 
+      {/* 多表格一键导入 */}
+      <Card className="border-0 rounded-2xl apple-card border-primary/20" style={{ background: 'linear-gradient(135deg, #f0f7ff 0%, #ffffff 50%)' }}>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base flex items-center gap-2">
+            <Sparkles className="h-4 w-4 text-primary" />
+            多表格一键导入
+            <Badge variant="default" className="text-xs bg-primary/10 text-primary border-0">推荐</Badge>
+          </CardTitle>
+          <CardDescription>
+            上传包含多个Sheet的Excel文件，系统自动识别每个表格类型并一起处理
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex items-center gap-2">
+            <span className="text-sm font-medium text-[#6E6E73]">选择店铺：</span>
+            <ShopFilter
+              value={uploadStore}
+              onChange={setUploadStore}
+              mode="select"
+            />
+          </div>
+
+          {!multiSheetResults.length && !multiSheetParsing && (
+            <div
+              className="border-2 border-dashed rounded-lg p-8 text-center hover:border-primary/50 transition-colors cursor-pointer bg-white/50"
+              onDrop={handleMultiSheetDrop}
+              onDragOver={(e) => e.preventDefault()}
+              onClick={() => document.getElementById('multi-sheet-upload')?.click()}
+            >
+              <input
+                id="multi-sheet-upload"
+                type="file"
+                accept=".xlsx,.xls"
+                className="hidden"
+                onChange={handleMultiSheetSelect}
+              />
+              <div className="flex flex-col items-center gap-2">
+                <div className="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center">
+                  <Table className="h-7 w-7 text-primary" />
+                </div>
+                <p className="text-sm font-medium">拖拽Excel文件到此处，或点击上传</p>
+                <p className="text-xs text-[#6E6E73]">
+                  支持 .xlsx .xls 格式，可包含多个Sheet（交易明细、仓储费、促销费用等）
+                </p>
+              </div>
+            </div>
+          )}
+
+          {multiSheetParsing && (
+            <div className="flex flex-col items-center gap-2 py-8">
+              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+              <p className="text-sm text-[#6E6E73]">正在检测表格类型...</p>
+            </div>
+          )}
+
+          {multiSheetResults.length > 0 && !multiSheetParsing && (
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <FileSpreadsheet className="h-4 w-4 text-primary" />
+                  <span className="text-sm font-medium">
+                    检测到 {multiSheetResults.length} 个表格
+                  </span>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="gap-1 text-xs"
+                  onClick={() => {
+                    setMultiSheetResults([]);
+                    setMultiSheetFile(null);
+                  }}
+                >
+                  <RefreshCw className="h-3 w-3" />
+                  重新上传
+                </Button>
+              </div>
+
+              <div className="space-y-2">
+                {multiSheetResults.map((sheet) => {
+                  const effectiveType = sheetTypeOverrides[sheet.sheetName] || sheet.detectedType;
+                  const confidencePercent = Math.round(sheet.confidence * 100);
+                  return (
+                    <div
+                      key={sheet.sheetName}
+                      className="flex items-center gap-3 p-3 rounded-lg border border-[#E5E5EA]/50 bg-white hover:shadow-sm transition-shadow"
+                    >
+                      <div
+                        className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0"
+                        style={{ background: `${getReportTypeColor(effectiveType)}15` }}
+                      >
+                        <ReportTypeIcon
+                          type={effectiveType}
+                          className="h-4 w-4"
+                        />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-medium truncate">{sheet.sheetName}</span>
+                          <Badge
+                            variant="outline"
+                            className="text-xs shrink-0"
+                            style={{ color: getReportTypeColor(effectiveType), borderColor: `${getReportTypeColor(effectiveType)}40` }}
+                          >
+                            {REPORT_TYPE_LABELS[effectiveType]}
+                          </Badge>
+                          {sheet.confidence >= 0.8 ? (
+                            <Badge variant="outline" className="text-xs bg-[#34C759]/10 text-[#34C759] border-0">
+                              高置信度 {confidencePercent}%
+                            </Badge>
+                          ) : sheet.confidence >= 0.5 ? (
+                            <Badge variant="outline" className="text-xs bg-[#FF9500]/10 text-[#FF9500] border-0">
+                              中置信度 {confidencePercent}%
+                            </Badge>
+                          ) : (
+                            <Badge variant="outline" className="text-xs bg-[#8E8E93]/10 text-[#8E8E93] border-0">
+                              低置信度 {confidencePercent}%
+                            </Badge>
+                          )}
+                        </div>
+                        <p className="text-xs text-[#6E6E73] mt-0.5">
+                          {sheet.rowCount} 行 · 列: {sheet.headers.slice(0, 5).join(', ')}
+                          {sheet.headers.length > 5 && ` ... +${sheet.headers.length - 5}`}
+                        </p>
+                      </div>
+                      {/* 类型切换 */}
+                      <select
+                        className="text-xs border border-[#E5E5EA]/50 rounded-md px-2 py-1 bg-white shrink-0 max-w-[120px]"
+                        value={effectiveType}
+                        onChange={(e) => changeSheetType(sheet.sheetName, e.target.value as ReportType)}
+                      >
+                        {Object.entries(REPORT_TYPE_LABELS).map(([value, label]) => (
+                          <option key={value} value={value}>{label}</option>
+                        ))}
+                      </select>
+                    </div>
+                  );
+                })}
+              </div>
+
+              <div className="flex items-center gap-3 p-4 bg-[#F5F5F7] border border-[#E5E5EA]/50 rounded-lg">
+                <div className="flex-1">
+                  <p className="text-sm font-medium text-foreground">确认导入所有表格</p>
+                  <p className="text-xs text-[#6E6E73]">
+                    系统将自动解析所有表格并合并数据，如检测类型有误可手动修改
+                  </p>
+                </div>
+                <Button
+                  onClick={handleConfirmMultiSheet}
+                  size="default"
+                  className="rounded-lg gap-1.5"
+                >
+                  <CheckCircle2 className="h-4 w-4" />
+                  确认导入
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
       {/* 报表类型选择器 */}
       <Card className="border-0 rounded-2xl apple-card">
         <CardHeader className="pb-3">
@@ -680,7 +959,7 @@ export default function ImportPage() {
       )}
 
       {/* 预览 & 结果 */}
-      {(transactionResult || storageFeeItems || adReportItems || returnReportItems || settlementReport) && (
+      {(transactionResult || storageFeeItems || adReportItems || returnReportItems || settlementReport || promotionFeeItems) && (
         <Tabs value={activeTab} onValueChange={setActiveTab}>
           <TabsList className="flex-wrap bg-[#F5F5F7] p-1 rounded-lg">
             <TabsTrigger value="preview" disabled={!transactionResult} className="rounded-md">
@@ -991,6 +1270,61 @@ export default function ImportPage() {
                             <td className="py-2 px-2 text-right tabular-nums">{item.returnQuantity}</td>
                             <td className="py-2 px-2 text-right tabular-nums">${item.refundAmount.toFixed(2)}</td>
                             <td className="py-2 px-2 max-w-[200px] truncate text-[#6E6E73]">{item.returnReason}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {promotionFeeItems && promotionFeeItems.length > 0 && (
+              <Card className="border-0 rounded-2xl apple-card">
+                <CardHeader>
+                  <CardTitle className="text-base flex items-center gap-2">
+                    <Sparkles className="h-4 w-4 text-purple-500" />
+                    促销费用分摊 ({promotionFeeItems.length} 条)
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-4">
+                    <div className="p-3 rounded-lg bg-[#F5F5F7]">
+                      <p className="text-xs text-[#6E6E73]">总促销费用</p>
+                      <p className="text-lg font-semibold text-[#FF3B30]">
+                        ${promotionFeeItems.reduce((s, i) => s + Math.abs(i.totalFee), 0).toFixed(2)}
+                      </p>
+                    </div>
+                    <div className="p-3 rounded-lg bg-[#F5F5F7]">
+                      <p className="text-xs text-[#6E6E73]">总销售额</p>
+                      <p className="text-lg font-semibold text-[#34C759]">
+                        ${promotionFeeItems.reduce((s, i) => s + i.salesAmount, 0).toFixed(2)}
+                      </p>
+                    </div>
+                    <div className="p-3 rounded-lg bg-[#F5F5F7]">
+                      <p className="text-xs text-[#6E6E73]">涉及SKU数</p>
+                      <p className="text-lg font-semibold tabular-nums">
+                        {new Set(promotionFeeItems.map(i => i.sku)).size}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="overflow-x-auto max-h-60 overflow-y-auto">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="border-b border-[#E5E5EA]/50 bg-[#F5F5F7]">
+                          <th className="text-left py-2 px-2 text-xs uppercase tracking-wider text-[#6E6E73] font-medium">SKU</th>
+                          <th className="text-left py-2 px-2 text-xs uppercase tracking-wider text-[#6E6E73] font-medium">促销编码</th>
+                          <th className="text-right py-2 px-2 text-xs uppercase tracking-wider text-[#6E6E73] font-medium">销售额</th>
+                          <th className="text-right py-2 px-2 text-xs uppercase tracking-wider text-[#6E6E73] font-medium">促销费用</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {promotionFeeItems.map((item, i) => (
+                          <tr key={i} className="border-b border-[#E5E5EA]/50 hover:bg-[#F5F5F7]">
+                            <td className="py-2 px-2 max-w-[120px] truncate">{item.sku}</td>
+                            <td className="py-2 px-2 max-w-[200px] truncate text-[#6E6E73] text-xs">{item.promotionCode}</td>
+                            <td className="py-2 px-2 text-right tabular-nums">${item.salesAmount.toFixed(2)}</td>
+                            <td className="py-2 px-2 text-right tabular-nums text-[#FF3B30]">${Math.abs(item.totalFee).toFixed(2)}</td>
                           </tr>
                         ))}
                       </tbody>

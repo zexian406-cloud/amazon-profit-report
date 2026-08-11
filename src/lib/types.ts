@@ -26,7 +26,8 @@ export type ReportType =
   | 'return'         // 退货报告
   | 'productCost'    // 产品成本/FOB
   | 'deliveryFee'    // 尾程运费
-  | 'managerMapping'; // 负责人映射
+  | 'managerMapping' // 负责人映射
+  | 'promotionFee';  // 促销费用分摊
 
 // 报表类型中文名
 export const REPORT_TYPE_LABELS: Record<ReportType, string> = {
@@ -38,6 +39,7 @@ export const REPORT_TYPE_LABELS: Record<ReportType, string> = {
   productCost: '产品成本/FOB',
   deliveryFee: '尾程运费',
   managerMapping: '负责人映射',
+  promotionFee: '促销费用分摊',
 };
 
 // 报表类型检测特征
@@ -280,6 +282,17 @@ export interface UploadedReport {
   uploadTime: string;
   rowCount: number;
   status: 'parsed' | 'merged';
+  sheetName?: string; // 多表格导入时记录来源sheet名
+}
+
+// 促销费用分摊项
+export interface PromotionFeeItem {
+  sku: string;
+  promotionCode: string;   // 促销编码
+  salesAmount: number;      // 销售额
+  totalFee: number;         // 促销总费用
+  month: string;
+  storeName: string;
 }
 
 export interface MultiReportResult {
@@ -294,6 +307,7 @@ export interface MultiReportResult {
   returnReportItems?: ReturnReportItem[];
   productCostItems?: ProductCostItem[];
   deliveryFeeItems?: DeliveryFeeItem[];
+  promotionFeeItems?: PromotionFeeItem[];
   uploadedReports: UploadedReport[];
 }
 

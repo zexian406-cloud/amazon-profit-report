@@ -3,12 +3,22 @@ import {
   ReportType, ReportTypeFeature,
   SettlementReport, StorageFeeItem, AdReportItem, ReturnReportItem,
   ProductCostItem, DeliveryFeeItem,
-  UploadedReport, Transaction, SharedFee,
+  UploadedReport, Transaction, SharedFee, PromotionFeeItem,
 } from './types';
 
 // ====== 报表类型自动检测特征配置 ======
 
 export const REPORT_TYPE_FEATURES: ReportTypeFeature[] = [
+  {
+    type: 'promotionFee',
+    keywords: ['促销', 'promotion', '促销费用', '促销编码', '促销总费用'],
+    requiredColumns: [
+      ['sku', 'SKU'],
+      ['促销编码', 'promotion-code', 'promotioncode'],
+      ['促销总费用', 'total-fee', 'totalfee', '促销费用'],
+    ],
+    priority: 85,
+  },
   {
     type: 'settlement',
     keywords: ['settlement', '结算', 'settlement-id'],
@@ -667,6 +677,63 @@ export function parseManagerMappingReport(file: File): Promise<{
   });
 }
 
+// ====== 促销费用分摊解析 ======
+
+export function parsePromotionFeeReport(file: File): Promise<{
+  promotionFeeItems: PromotionFeeItem[];
+  uploadedReports: UploadedReport[];
+}> {
+  return new Promise(async (resolve, reject) => {
+    try {
+      const { jsonData } = await readExcelFile(file);
+
+      const promotionFeeItems: PromotionFeeItem[] = [];
+      let storeName = '一店';
+      const monthSet = new Set<string>();
+
+      for (const row of jsonData) {
+        const promoCode = String(row['promotionCode'] || row['促销编码'] || row['promotion-code'] || '');
+        const sku = String(row['sku'] || row['SKU'] || '');
+        const salesAmount = parseAmount(String(row['sales'] || row['销售额'] || '0'));
+        const totalFee = parseAmount(String(row['totalFee'] || row['促销总费用'] || row['total-fee'] || '0'));
+
+        if (row['store']) storeName = row['store'];
+        if (!sku && !promoCode) continue;
+
+        const dateStr = row['date'] || '';
+        const month = dateStr ? extractMonthFromDate(dateStr) : extractMonthFromDate(new Date().toISOString());
+        monthSet.add(month);
+
+        promotionFeeItems.push({
+          sku: sku || 'N/A',
+          promotionCode: promoCode,
+          salesAmount,
+          totalFee,
+          month,
+          storeName,
+        });
+      }
+
+      const primaryMonth = Array.from(monthSet)[0] || extractMonthFromDate(new Date().toISOString());
+
+      const uploadedReports: UploadedReport[] = [{
+        id: `promotionFee-${Date.now()}`,
+        fileName: file.name,
+        reportType: 'promotionFee',
+        month: primaryMonth,
+        storeName,
+        uploadTime: new Date().toISOString(),
+        rowCount: jsonData.length,
+        status: 'parsed',
+      }];
+
+      resolve({ promotionFeeItems, uploadedReports });
+    } catch (error) {
+      reject(error);
+    }
+  });
+}
+
 // ====== 通用多报表解析入口 ======
 
 export async function parseReportByType(
@@ -680,6 +747,7 @@ export async function parseReportByType(
   returnReportItems?: ReturnReportItem[];
   productCostItems?: ProductCostItem[];
   deliveryFeeItems?: DeliveryFeeItem[];
+  promotionFeeItems?: PromotionFeeItem[];
   uploadedReports: UploadedReport[];
 }> {
   switch (reportType) {
@@ -710,6 +778,10 @@ export async function parseReportByType(
     case 'managerMapping': {
       const result = await parseManagerMappingReport(file);
       return { reportType, uploadedReports: result.uploadedReports };
+    }
+    case 'promotionFee': {
+      const result = await parsePromotionFeeReport(file);
+      return { reportType, promotionFeeItems: result.promotionFeeItems, uploadedReports: result.uploadedReports };
     }
     default:
       throw new Error(`不支持的报表类型: ${reportType}`);
@@ -797,6 +869,7 @@ export function getReportTypeColor(type: ReportType): string {
     productCost: '#06b6d4',
     deliveryFee: '#f97316',
     managerMapping: '#ec4899',
+    promotionFee: '#a855f7',
   };
   return colors[type] || '#6b7280';
 }
@@ -812,6 +885,7 @@ export function getReportTypeIcon(type: ReportType): string {
     productCost: 'DollarSign',
     deliveryFee: 'Truck',
     managerMapping: 'User',
+    promotionFee: 'Sparkles',
   };
   return icons[type] || 'File';
 }
