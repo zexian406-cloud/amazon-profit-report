@@ -12,7 +12,7 @@ import {
 } from 'lucide-react';
 import { parseExcel } from '@/lib/excel-parser';
 import { calculateSKUProfitWithReports } from '@/lib/profit-calculator';
-import { saveMonthlyData, saveSharedFees, saveProfitReport, saveManagerMappings } from '@/lib/idb';
+import { saveMonthlyData, saveSharedFees, saveProfitReport, saveManagerMappings, clearAllData } from '@/lib/idb';
 import {
   ParseResult, SKUProfitRow, SharedFee, Reconciliation,
   ReportType, REPORT_TYPE_LABELS, UploadedReport,
@@ -29,6 +29,7 @@ import {
 import {
   detectAllSheets, parseMultiSheetFile, SheetDetectionResult,
 } from '@/lib/multi-sheet-parser';
+import { readFileSmart } from '@/lib/file-reader';
 import * as XLSX from 'xlsx';
 
 const REPORT_TYPES: { type: ReportType; icon: typeof File }[] = [
@@ -130,8 +131,9 @@ export default function ImportPage() {
   }, [reportType, uploadedReports, transactionResult]);
 
   const handleFile = useCallback(async (file: File) => {
-    if (!file.name.endsWith('.xlsx') && !file.name.endsWith('.xls') && !file.name.endsWith('.csv')) {
-      setError('请上传 Excel 文件 (.xlsx, .xls, .csv)');
+    const lowerName = file.name.toLowerCase();
+    if (!lowerName.endsWith('.xlsx') && !lowerName.endsWith('.xls') && !lowerName.endsWith('.csv') && !lowerName.endsWith('.zip') && !lowerName.endsWith('.txt')) {
+      setError('请上传 Excel/CSV/ZIP 文件 (.xlsx, .xls, .csv, .zip, .txt)');
       return;
     }
     setError(null);
@@ -143,26 +145,10 @@ export default function ImportPage() {
 
       if (reportType === 'auto') {
         // 读取文件头部进行自动检测
-        const reader = new FileReader();
-        const headerStr = await new Promise<string>((resolve, reject) => {
-          reader.onload = (e) => {
-            try {
-              const data = new Uint8Array(e.target?.result as ArrayBuffer);
-              const workbook = XLSX.read(data, { type: 'array' });
-              const sheet = workbook.Sheets[workbook.SheetNames[0]];
-              const json = XLSX.utils.sheet_to_json<Record<string, any>>(sheet, { defval: '' });
-              if (json.length > 0) {
-                resolve(Object.keys(json[0]).join(' '));
-              } else {
-                resolve('');
-              }
-            } catch (err) {
-              reject(err);
-            }
-          };
-          reader.onerror = () => reject(new Error('读取文件失败'));
-          reader.readAsArrayBuffer(file.slice(0, 1024 * 64)); // 只读前64KB
-        });
+        const workbook = await readFileSmart(file);
+        const sheet = workbook.Sheets[workbook.SheetNames[0]];
+        const json = XLSX.utils.sheet_to_json<Record<string, any>>(sheet, { defval: '' });
+        const headerStr = json.length > 0 ? Object.keys(json[0]).join(' ') : '';
         actualType = detectReportType(headerStr.split(' '));
       }
 
@@ -306,11 +292,40 @@ export default function ImportPage() {
     if (report.reportType === 'promotionFee') setPromotionFeeItems(undefined);
   }
 
+  // ====== 清空所有数据 ======
+  async function handleClearAll() {
+    if (!confirm('确定要清空所有已导入的数据吗？包括交易明细、利润表、共享费用等，此操作不可撤销。')) return;
+    try {
+      await clearAllData();
+      setTransactionResult(null);
+      setSkuRows([]);
+      setReconciliation(null);
+      setUploadedReports([]);
+      setStorageFeeItems(undefined);
+      setAdReportItems(undefined);
+      setReturnReportItems(undefined);
+      setSettlementReport(undefined);
+      setProductCostItems(undefined);
+      setDeliveryFeeItems(undefined);
+      setManagerMappings(undefined);
+      setPromotionFeeItems(undefined);
+      setPreviewData([]);
+      setPreviewHeaders([]);
+      setMultiSheetResults([]);
+      setMultiSheetFile(null);
+      setSaved(false);
+      setError(null);
+    } catch (err) {
+      setError(`清空数据失败: ${err instanceof Error ? err.message : '未知错误'}`);
+    }
+  }
+
   // ====== 多表格一键上传 ======
 
   const handleMultiSheetFile = useCallback(async (file: File) => {
-    if (!file.name.endsWith('.xlsx') && !file.name.endsWith('.xls')) {
-      setError('多表格上传请使用 .xlsx 或 .xls 格式');
+    const lowerName = file.name.toLowerCase();
+    if (!lowerName.endsWith('.xlsx') && !lowerName.endsWith('.xls') && !lowerName.endsWith('.csv') && !lowerName.endsWith('.zip') && !lowerName.endsWith('.txt')) {
+      setError('多表格上传请使用 .xlsx, .xls, .csv, .zip 或 .txt 格式');
       return;
     }
     setError(null);
@@ -714,7 +729,7 @@ export default function ImportPage() {
               <input
                 id="multi-sheet-upload"
                 type="file"
-                accept=".xlsx,.xls"
+                accept=".xlsx,.xls,.csv,.zip,.txt"
                 className="hidden"
                 onChange={handleMultiSheetSelect}
               />
@@ -722,9 +737,9 @@ export default function ImportPage() {
                 <div className="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center">
                   <Table className="h-7 w-7 text-primary" />
                 </div>
-                <p className="text-sm font-medium">拖拽Excel文件到此处，或点击上传</p>
+                <p className="text-sm font-medium">拖拽文件到此处，或点击上传</p>
                 <p className="text-xs text-[#6E6E73]">
-                  支持 .xlsx .xls 格式，可包含多个Sheet（交易明细、仓储费、促销费用等）
+                  支持 .xlsx .xls .csv .zip .txt 格式，可包含多个Sheet
                 </p>
               </div>
             </div>
@@ -910,7 +925,7 @@ export default function ImportPage() {
             <input
               id="file-upload"
               type="file"
-              accept=".xlsx,.xls,.csv"
+              accept=".xlsx,.xls,.csv,.zip,.txt"
               className="hidden"
               onChange={handleFileSelect}
             />
@@ -924,7 +939,7 @@ export default function ImportPage() {
                 <Upload className="h-8 w-8 text-[#6E6E73]" />
                 <p className="text-sm font-medium">拖拽文件到此处，或点击上传</p>
                 <p className="text-xs text-[#6E6E73]">
-                  支持 .xlsx .xls .csv 格式
+                  支持 .xlsx .xls .csv .zip .txt 格式
                 </p>
               </div>
             )}
@@ -942,10 +957,21 @@ export default function ImportPage() {
       {uploadedReports.length > 0 && (
         <Card className="border-0 rounded-2xl apple-card">
           <CardHeader className="pb-3">
-            <CardTitle className="text-base flex items-center gap-2">
-              <FileSpreadsheet className="h-4 w-4 text-primary" />
-              已上传报表 ({uploadedReports.length})
-            </CardTitle>
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-base flex items-center gap-2">
+                <FileSpreadsheet className="h-4 w-4 text-primary" />
+                已上传报表 ({uploadedReports.length})
+              </CardTitle>
+              <Button
+                variant="outline"
+                size="sm"
+                className="gap-1.5 text-[#FF3B30] border-[#FF3B30]/30 hover:bg-[#FF3B30]/5"
+                onClick={handleClearAll}
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+                清空数据
+              </Button>
+            </div>
           </CardHeader>
           <CardContent>
             <div className="space-y-2">

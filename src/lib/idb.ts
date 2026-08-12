@@ -282,6 +282,20 @@ export async function getAllProfitReports(): Promise<SKUProfitRow[]> {
   });
 }
 
+// 清空所有数据（交易明细、共享费用、利润报表）
+export async function clearAllData(): Promise<void> {
+  const db = await openDB();
+  const storeNames = ['monthlyData', 'sharedFees', 'profitReports'];
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(storeNames, 'readwrite');
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error);
+    for (const name of storeNames) {
+      tx.objectStore(name).clear();
+    }
+  });
+}
+
 // 获取历史月份列表
 export async function getHistoryMonths(): Promise<HistoryMonth[]> {
   const all = await getAllMonthlyData();

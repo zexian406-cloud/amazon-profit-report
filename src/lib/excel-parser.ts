@@ -1,5 +1,6 @@
 import * as XLSX from 'xlsx';
 import { Transaction, TransactionType, ParseResult, SharedFee, FEE_CATEGORY_MAP } from './types';
+import { readFileSmart } from './file-reader';
 
 // 判断交易类型
 function detectTransactionType(row: Record<string, string>): TransactionType {
@@ -150,134 +151,125 @@ function normalizeHeader(header: string): string {
   return map[key] || header;
 }
 
-export function parseExcel(file: File): Promise<ParseResult> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      try {
-        const data = new Uint8Array(e.target?.result as ArrayBuffer);
-        const workbook = XLSX.read(data, { type: 'array' });
+export async function parseExcel(file: File): Promise<ParseResult> {
+  try {
+    const workbook = await readFileSmart(file);
 
-        // 取第一个sheet
-        const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
-        const jsonData = XLSX.utils.sheet_to_json<Record<string, any>>(firstSheet, { defval: '' });
+    // 取第一个sheet
+    const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+    const jsonData = XLSX.utils.sheet_to_json<Record<string, any>>(firstSheet, { defval: '' });
 
-        if (jsonData.length === 0) {
-          reject(new Error('Excel文件为空'));
-          return;
-        }
+    if (jsonData.length === 0) {
+      throw new Error('Excel文件为空');
+    }
 
-        // 标准化列名
-        const normalizedData: Record<string, string>[] = jsonData.map((row) => {
-          const normalized: Record<string, string> = {};
-          for (const [key, value] of Object.entries(row)) {
-            normalized[normalizeHeader(key)] = String(value);
-          }
-          return normalized;
-        });
+    // 标准化列名
+    const normalizedData: Record<string, string>[] = jsonData.map((row) => {
+      const normalized: Record<string, string> = {};
+      for (const [key, value] of Object.entries(row)) {
+        normalized[normalizeHeader(key)] = String(value);
+      }
+      return normalized;
+    });
 
-        // 提取月份和店铺
-        const month = extractMonth(normalizedData);
-        const storeName = extractStoreName(normalizedData);
+    // 提取月份和店铺
+    const month = extractMonth(normalizedData);
+    const storeName = extractStoreName(normalizedData);
 
-        // 解析交易记录
-        const transactions: Transaction[] = [];
-        const sharedFees: SharedFee[] = [];
-        let totalBillAmount = 0;
+    // 解析交易记录
+    const transactions: Transaction[] = [];
+    const sharedFees: SharedFee[] = [];
+    let totalBillAmount = 0;
 
-        for (const row of normalizedData) {
-          const amount = parseAmount(row['amount']);
-          totalBillAmount += amount;
+    for (const row of normalizedData) {
+      const amount = parseAmount(row['amount']);
+      totalBillAmount += amount;
 
-          const type = detectTransactionType(row);
-          const sku = row['sku'] || 'N/A';
-          const asin = row['asin'] || 'N/A';
-          const description = row['description'] || row['productName'] || '';
-          const quantity = parseQuantity(row['quantity']);
-          const orderId = row['orderId'] || '';
-          const currency = row['currency'] || 'USD';
-          const category = row['category'] || '';
+      const type = detectTransactionType(row);
+      const sku = row['sku'] || 'N/A';
+      const asin = row['asin'] || 'N/A';
+      const description = row['description'] || row['productName'] || '';
+      const quantity = parseQuantity(row['quantity']);
+      const orderId = row['orderId'] || '';
+      const currency = row['currency'] || 'USD';
+      const category = row['category'] || '';
 
-          // 共享费用（无SKU的费用）
-          if (sku === 'N/A' || sku === '' || !row['sku']) {
-            const feeCategory = mapToFeeCategory(type, description, category);
-            if (amount !== 0) {
-              sharedFees.push({
-                month,
-                storeName,
-                category: feeCategory,
-                totalAmount: amount,
-                description: description || `${type}费用`,
-              });
-            }
-            continue;
-          }
-
-          transactions.push({
-            date: row['date'] || month,
-            type,
-            sku,
-            asin,
-            description,
-            quantity,
-            unitPrice: quantity !== 0 ? amount / quantity : amount,
-            totalAmount: amount,
-            currency,
-            orderId,
-            storeName,
-            category,
-            manager: row['manager'] || '',
-            rawRow: row,
-          });
-        }
-
-        // 处理订阅费 - 作为共享费用
-        const subscriptionFee = sharedFees.find(f => f.category === 'SubscriptionFee');
-        if (!subscriptionFee) {
-          // 默认添加订阅费
+      // 共享费用（无SKU的费用）
+      if (sku === 'N/A' || sku === '' || !row['sku']) {
+        const feeCategory = mapToFeeCategory(type, description, category);
+        if (amount !== 0) {
           sharedFees.push({
             month,
             storeName,
-            category: 'SubscriptionFee',
-            totalAmount: -39.99,
-            description: '月订阅费（专业销售计划）',
+            category: feeCategory,
+            totalAmount: amount,
+            description: description || `${type}费用`,
           });
         }
-
-        // 计算净收入
-        const orderTotal = transactions
-          .filter(t => t.type === 'Order')
-          .reduce((s, t) => s + t.totalAmount, 0);
-        const refundTotal = transactions
-          .filter(t => t.type === 'Refund')
-          .reduce((s, t) => s + t.totalAmount, 0);
-        const skuNetIncome = orderTotal + refundTotal; // refund是负数
-        const sharedFeeTotal = sharedFees.reduce((s, f) => s + f.totalAmount, 0);
-
-        const reconciliation = {
-          month,
-          storeName,
-          skuNetIncome: Math.round(skuNetIncome * 100) / 100,
-          sharedFeeTotal: Math.round(sharedFeeTotal * 100) / 100,
-          totalNetIncome: Math.round((skuNetIncome + sharedFeeTotal) * 100) / 100,
-          grandTotalFromBill: Math.round(totalBillAmount * 100) / 100,
-          difference: Math.round((totalBillAmount - (skuNetIncome + sharedFeeTotal)) * 100) / 100,
-        };
-
-        resolve({
-          month,
-          storeName,
-          transactions,
-          sharedFees,
-          reconciliation,
-        });
-      } catch (error) {
-        reject(error);
+        continue;
       }
+
+      transactions.push({
+        date: row['date'] || month,
+        type,
+        sku,
+        asin,
+        description,
+        quantity,
+        unitPrice: quantity !== 0 ? amount / quantity : amount,
+        totalAmount: amount,
+        currency,
+        orderId,
+        storeName,
+        category,
+        manager: row['manager'] || '',
+        rawRow: row,
+      });
+    }
+
+    // 处理订阅费 - 作为共享费用
+    const subscriptionFee = sharedFees.find(f => f.category === 'SubscriptionFee');
+    if (!subscriptionFee) {
+      // 默认添加订阅费
+      sharedFees.push({
+        month,
+        storeName,
+        category: 'SubscriptionFee',
+        totalAmount: -39.99,
+        description: '月订阅费（专业销售计划）',
+      });
+    }
+
+    // 计算净收入
+    const orderTotal = transactions
+      .filter(t => t.type === 'Order')
+      .reduce((s, t) => s + t.totalAmount, 0);
+    const refundTotal = transactions
+      .filter(t => t.type === 'Refund')
+      .reduce((s, t) => s + t.totalAmount, 0);
+    const skuNetIncome = orderTotal + refundTotal; // refund是负数
+    const sharedFeeTotal = sharedFees.reduce((s, f) => s + f.totalAmount, 0);
+
+    const reconciliation = {
+      month,
+      storeName,
+      skuNetIncome: Math.round(skuNetIncome * 100) / 100,
+      sharedFeeTotal: Math.round(sharedFeeTotal * 100) / 100,
+      totalNetIncome: Math.round((skuNetIncome + sharedFeeTotal) * 100) / 100,
+      grandTotalFromBill: Math.round(totalBillAmount * 100) / 100,
+      difference: Math.round((totalBillAmount - (skuNetIncome + sharedFeeTotal)) * 100) / 100,
     };
-    reader.onerror = () => reject(new Error('读取文件失败'));
-    reader.readAsArrayBuffer(file);
-  });
+
+    return {
+      month,
+      storeName,
+      transactions,
+      sharedFees,
+      reconciliation,
+    };
+  } catch (error) {
+    throw error;
+  }
 }
 
 function extractMonth(data: Record<string, string>[]): string {

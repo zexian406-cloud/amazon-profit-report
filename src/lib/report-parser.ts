@@ -5,6 +5,7 @@ import {
   ProductCostItem, DeliveryFeeItem,
   UploadedReport, Transaction, SharedFee, PromotionFeeItem,
 } from './types';
+import { readFileSmart } from './file-reader';
 
 // ====== 报表类型自动检测特征配置 ======
 
@@ -177,38 +178,25 @@ function extractMonthFromDate(dateStr: string): string {
   return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
 }
 
-function readExcelFile(file: File): Promise<{ workbook: XLSX.WorkBook; jsonData: Record<string, string>[] }> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      try {
-        const data = new Uint8Array(e.target?.result as ArrayBuffer);
-        const workbook = XLSX.read(data, { type: 'array' });
-        const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
-        const rawData = XLSX.utils.sheet_to_json<Record<string, any>>(firstSheet, { defval: '' });
+async function readExcelFile(file: File): Promise<{ workbook: XLSX.WorkBook; jsonData: Record<string, string>[] }> {
+  const workbook = await readFileSmart(file);
+  const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+  const rawData = XLSX.utils.sheet_to_json<Record<string, any>>(firstSheet, { defval: '' });
 
-        if (rawData.length === 0) {
-          reject(new Error('Excel文件为空'));
-          return;
-        }
+  if (rawData.length === 0) {
+    throw new Error('Excel文件为空');
+  }
 
-        // 标准化列名
-        const jsonData: Record<string, string>[] = rawData.map((row) => {
-          const normalized: Record<string, string> = {};
-          for (const [key, value] of Object.entries(row)) {
-            normalized[normalizeHeader(key)] = String(value);
-          }
-          return normalized;
-        });
-
-        resolve({ workbook, jsonData });
-      } catch (error) {
-        reject(error);
-      }
-    };
-    reader.onerror = () => reject(new Error('读取文件失败'));
-    reader.readAsArrayBuffer(file);
+  // 标准化列名
+  const jsonData: Record<string, string>[] = rawData.map((row) => {
+    const normalized: Record<string, string> = {};
+    for (const [key, value] of Object.entries(row)) {
+      normalized[normalizeHeader(key)] = String(value);
+    }
+    return normalized;
   });
+
+  return { workbook, jsonData };
 }
 
 // ====== 报表类型自动识别 ======

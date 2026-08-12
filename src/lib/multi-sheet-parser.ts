@@ -4,6 +4,7 @@ import {
   StorageFeeItem, PromotionFeeItem, UploadedReport, ReportType,
 } from './types';
 import { detectTransactionType, normalizeHeader, parseAmount, parseQuantity } from './sheet-utils';
+import { readFileSmart } from './file-reader';
 
 // ====== 多表格Sheet检测结果 ======
 export interface SheetDetectionResult {
@@ -140,66 +141,58 @@ export function detectSheetType(
 
 // ====== 读取Excel所有Sheet ======
 
-export function readWorkbookSheets(file: File): Promise<{
+export async function readWorkbookSheets(file: File): Promise<{
   workbook: XLSX.WorkBook;
   sheets: { name: string; rawData: Record<string, any>[]; headers: string[]; headerRowIndex: number }[];
 }> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      try {
-        const data = new Uint8Array(e.target?.result as ArrayBuffer);
-        const workbook = XLSX.read(data, { type: 'array' });
+  try {
+    const workbook = await readFileSmart(file);
 
-        const sheets = workbook.SheetNames.map(name => {
-          const sheet = workbook.Sheets[name];
-          // 先尝试直接读取（第一行是表头）
-          let rawData = XLSX.utils.sheet_to_json<Record<string, any>>(sheet, { defval: '' });
+    const sheets = workbook.SheetNames.map(name => {
+      const sheet = workbook.Sheets[name];
+      // 先尝试直接读取（第一行是表头）
+      let rawData = XLSX.utils.sheet_to_json<Record<string, any>>(sheet, { defval: '' });
 
-          // 检查第一行是否是标题行（合并单元格或只有一列有值）
-          // 这种情况常见于"促销费用分摊"类型的sheet
-          let headerRowIndex = 0;
+      // 检查第一行是否是标题行（合并单元格或只有一列有值）
+      // 这种情况常见于"促销费用分摊"类型的sheet
+      let headerRowIndex = 0;
 
-          if (rawData.length === 0 || (rawData.length > 0 && Object.keys(rawData[0]).length <= 1)) {
-            // 尝试从第二行读取表头
-            const allRows = XLSX.utils.sheet_to_json<any[]>(sheet, { header: 1, defval: '' });
-            // 找到第一个有2个以上非空值的行作为表头
-            for (let i = 0; i < Math.min(allRows.length, 5); i++) {
-              const nonEmptyCount = (allRows[i] || []).filter((v: any) => v !== '' && v != null).length;
-              if (nonEmptyCount >= 2) {
-                headerRowIndex = i;
-                break;
-              }
-            }
-
-            if (headerRowIndex > 0 && allRows.length > headerRowIndex) {
-              const headerRow = allRows[headerRowIndex];
-              const dataRows = allRows.slice(headerRowIndex + 1);
-              rawData = dataRows.map(row => {
-                const obj: Record<string, any> = {};
-                headerRow.forEach((header: any, idx: number) => {
-                  if (header != null && header !== '') {
-                    obj[String(header)] = row[idx] ?? '';
-                  }
-                });
-                return obj;
-              });
-            }
+      if (rawData.length === 0 || (rawData.length > 0 && Object.keys(rawData[0]).length <= 1)) {
+        // 尝试从第二行读取表头
+        const allRows = XLSX.utils.sheet_to_json<any[]>(sheet, { header: 1, defval: '' });
+        // 找到第一个有2个以上非空值的行作为表头
+        for (let i = 0; i < Math.min(allRows.length, 5); i++) {
+          const nonEmptyCount = (allRows[i] || []).filter((v: any) => v !== '' && v != null).length;
+          if (nonEmptyCount >= 2) {
+            headerRowIndex = i;
+            break;
           }
+        }
 
-          const headers = rawData.length > 0 ? Object.keys(rawData[0]) : [];
-
-          return { name, rawData, headers, headerRowIndex };
-        });
-
-        resolve({ workbook, sheets });
-      } catch (error) {
-        reject(error);
+        if (headerRowIndex > 0 && allRows.length > headerRowIndex) {
+          const headerRow = allRows[headerRowIndex];
+          const dataRows = allRows.slice(headerRowIndex + 1);
+          rawData = dataRows.map(row => {
+            const obj: Record<string, any> = {};
+            headerRow.forEach((header: any, idx: number) => {
+              if (header != null && header !== '') {
+                obj[String(header)] = row[idx] ?? '';
+              }
+            });
+            return obj;
+          });
+        }
       }
-    };
-    reader.onerror = () => reject(new Error('读取文件失败'));
-    reader.readAsArrayBuffer(file);
-  });
+
+      const headers = rawData.length > 0 ? Object.keys(rawData[0]) : [];
+
+      return { name, rawData, headers, headerRowIndex };
+    });
+
+    return { workbook, sheets };
+  } catch (error) {
+    throw error;
+  }
 }
 
 // ====== 预检测所有Sheet类型 ======
